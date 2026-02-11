@@ -8,6 +8,7 @@ const menuItems = [
     { name: 'Customer Records', path: '/customers', icon: '👥' },
     { name: 'Service Billing', path: '/billing', icon: '📝' },
     { name: 'Analytics', path: '/analytics', icon: '📈' },
+    { name: 'Admin Panel', path: '/admin', icon: '⚙️' },
 ];
 
 export default function Sidebar({ onCloseMobile }: { onCloseMobile: () => void }) {

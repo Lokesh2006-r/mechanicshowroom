@@ -195,3 +195,56 @@ export async function addVehicle(formData: FormData) {
     revalidatePath('/customers');
     return { success: true };
 }
+
+// ==================== ADMIN ACTIONS ====================
+
+export async function updateProduct(productId: string, updates: Partial<{
+    name: string;
+    category: string;
+    supplier: string;
+    price: number;
+    gstRate: number;
+    quantity: number;
+    minStockAlert: number;
+}>) {
+    await dbConnect();
+
+    const result = await ProductModel.findOneAndUpdate(
+        { id: productId },
+        { $set: updates },
+        { new: true }
+    );
+
+    if (!result) throw new Error('Product not found');
+
+    revalidatePath('/');
+    revalidatePath('/inventory');
+    revalidatePath('/billing');
+    revalidatePath('/admin');
+    return { success: true };
+}
+
+export async function deleteProduct(productId: string) {
+    await dbConnect();
+
+    const result = await ProductModel.deleteOne({ id: productId });
+    if (result.deletedCount === 0) throw new Error('Product not found');
+
+    revalidatePath('/');
+    revalidatePath('/inventory');
+    revalidatePath('/admin');
+    return { success: true };
+}
+
+export async function deleteCustomer(customerId: string) {
+    await dbConnect();
+
+    const result = await CustomerModel.deleteOne({ id: customerId });
+    if (result.deletedCount === 0) throw new Error('Customer not found');
+
+    revalidatePath('/');
+    revalidatePath('/customers');
+    revalidatePath('/admin');
+    return { success: true };
+}
+
