@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db';
 import AdminClient from '@/components/admin/AdminClient';
+import LogoutButton from '@/components/admin/LogoutButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +16,14 @@ export default async function AdminPage() {
                     </h2>
                     <p className="text-slate-400 mt-1">Manage products, prices, customers, and system settings</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
                     <span className="bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5">
                         📦 {db.products.length} Products
                     </span>
                     <span className="bg-slate-800 text-slate-300 text-xs px-3 py-1.5 rounded-full border border-slate-700 flex items-center gap-1.5">
                         👥 {db.customers.length} Customers
                     </span>
+                    <LogoutButton />
                 </div>
             </div>
 
