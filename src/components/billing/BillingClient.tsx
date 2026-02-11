@@ -92,8 +92,59 @@ export default function BillingClient({ products, customers }: { products: Produ
             {/* Form Section */}
             <div className="flex-1 space-y-6">
 
-                {/* Customer Selection */}
-                {/* ... */}
+                {/* Customer & Vehicle Selection */}
+                <div className="glass-panel">
+                    <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Customer &amp; Vehicle</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Select Customer</label>
+                            <select
+                                value={selectedCustomerId}
+                                onChange={e => {
+                                    setSelectedCustomerId(e.target.value);
+                                    setSelectedVehicleId('');
+                                }}
+                                className="w-full bg-slate-900 border-slate-700 rounded p-2 text-white"
+                            >
+                                <option value="">-- Choose Customer --</option>
+                                {customers.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Select Vehicle</label>
+                            <select
+                                value={selectedVehicleId}
+                                onChange={e => setSelectedVehicleId(e.target.value)}
+                                className="w-full bg-slate-900 border-slate-700 rounded p-2 text-white"
+                                disabled={!selectedCustomerId}
+                            >
+                                <option value="">-- Choose Vehicle --</option>
+                                {customerVehicles.map(v => (
+                                    <option key={v.id} value={v.id}>{v.vehicleNumber} - {v.modelName}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Show selected details */}
+                    {selectedCustomer && selectedVehicleId && (() => {
+                        const vehicle = customerVehicles.find(v => v.id === selectedVehicleId);
+                        return vehicle ? (
+                            <div className="mt-4 bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 flex justify-between items-center">
+                                <div>
+                                    <p className="text-white font-medium">{selectedCustomer.name}</p>
+                                    <p className="text-slate-400 text-sm">{selectedCustomer.phone}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-emerald-400 font-bold">{vehicle.vehicleNumber}</p>
+                                    <p className="text-slate-400 text-sm">{vehicle.modelName} • {vehicle.vehicleType}</p>
+                                </div>
+                            </div>
+                        ) : null;
+                    })()}
+                </div>
 
                 {/* Service Info */}
                 <div className="glass-panel">
