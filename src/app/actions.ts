@@ -1,12 +1,13 @@
 'use server';
 
-import { getDb, saveDb } from '@/lib/db';
+import dbConnect from '@/lib/mongodb';
+import { ProductModel, CustomerModel } from '@/models/models';
 import { Product, Customer, ServiceRecord } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 
 export async function addProduct(formData: FormData) {
-    const db = await getDb();
+    await dbConnect();
 
     const name = formData.get('name') as string;
     const category = formData.get('category') as 'Tool' | 'Spare Part';
@@ -16,7 +17,7 @@ export async function addProduct(formData: FormData) {
     const quantity = parseInt(formData.get('quantity') as string);
     const minStockAlert = parseInt(formData.get('minStockAlert') as string);
 
-    const newProduct: Product = {
+    await ProductModel.create({
         id: randomUUID(),
         name,
         category,
@@ -25,17 +26,15 @@ export async function addProduct(formData: FormData) {
         gstRate,
         quantity,
         minStockAlert
-    };
+    });
 
-    db.products.push(newProduct);
-    await saveDb(db);
     revalidatePath('/inventory');
-    revalidatePath('/'); // For stock alerts
+    revalidatePath('/');
     return { success: true };
 }
 
 export async function addCustomer(formData: FormData) {
-    const db = await getDb();
+    await dbConnect();
 
     const name = formData.get('name') as string;
     const phone = formData.get('phone') as string;
@@ -45,49 +44,43 @@ export async function addCustomer(formData: FormData) {
     const modelName = formData.get('modelName') as string || 'Unknown Model';
     const registrationDate = new Date().toISOString();
 
-    const newVehicle: any = {
-        id: randomUUID(),
-        vehicleNumber,
-        vehicleType,
-        modelName,
-        registrationDate,
-        serviceHistory: []
-    };
-
-    const newCustomer: Customer = {
+    await CustomerModel.create({
         id: randomUUID(),
         name,
         phone,
         email,
-        vehicles: [newVehicle]
-    };
+        vehicles: [{
+            id: randomUUID(),
+            vehicleNumber,
+            vehicleType,
+            modelName,
+            registrationDate,
+            serviceHistory: []
+        }]
+    });
 
-    db.customers.push(newCustomer);
-    await saveDb(db);
     revalidatePath('/customers');
     return { success: true };
 }
 
 export async function updateCustomer(formData: FormData) {
-    // This function likely needs a full rewrite if the UI changes, 
-    // but for now let's just update basic details and maybe the first vehicle?
-    // To be safe, let's just update customer details.
-    const db = await getDb();
+    await dbConnect();
     const id = formData.get('id') as string;
 
-    const index = db.customers.findIndex(c => c.id === id);
-    if (index === -1) throw new Error('Customer not found');
+    const result = await CustomerModel.findOneAndUpdate(
+        { id },
+        {
+            $set: {
+                name: formData.get('name') as string,
+                phone: formData.get('phone') as string,
+                email: formData.get('email') as string,
+            }
+        },
+        { new: true }
+    );
 
-    // Merge updates
-    const customer = db.customers[index];
-    customer.name = formData.get('name') as string;
-    customer.phone = formData.get('phone') as string;
-    customer.email = formData.get('email') as string;
+    if (!result) throw new Error('Customer not found');
 
-    // Legacy support: if we updated vehicle details here before, we might need a specific 'updateVehicle' action now.
-    // For now, ignoring vehicle updates in this specific action to avoid complexity.
-
-    await saveDb(db);
     revalidatePath('/customers');
     return { success: true };
 }
@@ -100,30 +93,34 @@ export async function saveService(customerId: string, vehicleId: string, service
     parts: { productId: string; quantity: number }[];
     notes?: string;
 }) {
-    const db = await getDb();
-    const customer = db.customers.find(c => c.id === customerId);
+    await dbConnect();
+
+    const customer = await CustomerModel.findOne({ id: customerId });
     if (!customer) throw new Error('Customer not found');
 
-    const vehicle = customer.vehicles.find(v => v.id === vehicleId);
+    const vehicle = (customer.vehicles as any[]).find((v: any) => v.id === vehicleId);
     if (!vehicle) throw new Error('Vehicle not found');
 
-    const partsUsedDetails = [];
+    const partsUsedDetails: any[] = [];
     let totalPartsCost = 0;
     let totalPartsGst = 0;
 
     // Process parts and deduct stock
     for (const partItem of serviceData.parts) {
-        const productIndex = db.products.findIndex(p => p.id === partItem.productId);
-        if (productIndex === -1) continue;
+        if (!partItem.productId) continue;
 
-        const product = db.products[productIndex];
+        const product = await ProductModel.findOne({ id: partItem.productId });
+        if (!product) continue;
 
         if (product.quantity < partItem.quantity) {
             throw new Error(`Insufficient stock for ${product.name}`);
         }
 
-        // Deduct stock
-        product.quantity -= partItem.quantity;
+        // Deduct stock in MongoDB
+        await ProductModel.updateOne(
+            { id: partItem.productId },
+            { $inc: { quantity: -partItem.quantity } }
+        );
 
         const cost = product.price * partItem.quantity;
         const gst = cost * (product.gstRate / 100);
@@ -144,7 +141,7 @@ export async function saveService(customerId: string, vehicleId: string, service
     const totalGst = totalPartsGst + serviceGst;
     const totalCost = serviceData.serviceCharge + totalPartsCost + totalGst;
 
-    const newService: ServiceRecord = {
+    const newService = {
         id: randomUUID(),
         date: serviceData.date,
         type: serviceData.type,
@@ -153,12 +150,15 @@ export async function saveService(customerId: string, vehicleId: string, service
         serviceCharge: serviceData.serviceCharge,
         gstAmount: totalGst,
         totalCost: totalCost,
-        notes: serviceData.notes
+        notes: serviceData.notes || ''
     };
 
-    vehicle.serviceHistory.push(newService);
+    // Push the service record to the correct vehicle
+    await CustomerModel.updateOne(
+        { id: customerId, 'vehicles.id': vehicleId },
+        { $push: { 'vehicles.$.serviceHistory': newService } }
+    );
 
-    await saveDb(db);
     revalidatePath('/');
     revalidatePath('/customers');
     revalidatePath('/inventory');
@@ -168,20 +168,15 @@ export async function saveService(customerId: string, vehicleId: string, service
 }
 
 export async function addVehicle(formData: FormData) {
-    const db = await getDb();
+    await dbConnect();
     const customerId = formData.get('customerId') as string;
-
-    const customerIndex = db.customers.findIndex(c => c.id === customerId);
-    if (customerIndex === -1) throw new Error('Customer not found');
-
-    const customer = db.customers[customerIndex];
 
     const vehicleNumber = formData.get('vehicleNumber') as string;
     const vehicleType = formData.get('vehicleType') as string;
     const modelName = formData.get('modelName') as string || 'Unknown Model';
     const registrationDate = new Date().toISOString();
 
-    const newVehicle: any = {
+    const newVehicle = {
         id: randomUUID(),
         vehicleNumber,
         vehicleType,
@@ -190,8 +185,13 @@ export async function addVehicle(formData: FormData) {
         serviceHistory: []
     };
 
-    customer.vehicles.push(newVehicle);
-    await saveDb(db);
+    const result = await CustomerModel.updateOne(
+        { id: customerId },
+        { $push: { vehicles: newVehicle } }
+    );
+
+    if (result.matchedCount === 0) throw new Error('Customer not found');
+
     revalidatePath('/customers');
     return { success: true };
 }

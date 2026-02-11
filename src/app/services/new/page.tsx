@@ -1,6 +1,8 @@
 import { getDb } from '@/lib/db';
 import ServiceForm from './ServiceForm';
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewServicePage() {
     const db = await getDb();
 

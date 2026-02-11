@@ -3,6 +3,8 @@ import { Product } from '@/types';
 import Link from 'next/link';
 import DownloadReportButton from '@/components/dashboard/DownloadReportButton';
 
+export const dynamic = 'force-dynamic';
+
 // Helper for date calculations
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const SERVICE_CYCLE_DAYS = 150;

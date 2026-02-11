@@ -1,6 +1,8 @@
 import { getDb } from '@/lib/db';
 import InventoryClient from '@/components/inventory/InventoryClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function InventoryPage() {
     const db = await getDb();
 

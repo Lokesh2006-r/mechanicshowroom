@@ -1,6 +1,8 @@
 import { getDb } from '@/lib/db';
 import CustomerClient from '@/components/customers/CustomerClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CustomersPage() {
     const db = await getDb();
 
