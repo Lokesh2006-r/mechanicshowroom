@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db';
 import ServiceForm from './ServiceForm';
+import { MECHANICS_LIST } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export default async function NewServicePage() {
             <ServiceForm
                 customers={db.customers}
                 products={db.products}
+                mechanics={MECHANICS_LIST}
             />
         </div>
     );

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Product, Customer } from '@/types';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/ui/Modal';
+import { MECHANICS_DATA, Mechanic } from '@/lib/constants';
 
 export default function AdminClient({ products, customers }: { products: Product[], customers: Customer[] }) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'products' | 'customers'>('products');
+    const [activeTab, setActiveTab] = useState<'products' | 'customers' | 'employees'>('products');
     const [searchTerm, setSearchTerm] = useState('');
 
     // Product edit state
@@ -18,10 +19,41 @@ export default function AdminClient({ products, customers }: { products: Product
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
     const [custEditForm, setCustEditForm] = useState<{ name: string; phone: string; email: string }>({ name: '', phone: '', email: '' });
 
+    // Employee detail modal
+    const [viewingEmployee, setViewingEmployee] = useState<Mechanic | null>(null);
+
     // Delete confirmation
     const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'product' | 'customer'; id: string; name: string } | null>(null);
 
     const [saving, setSaving] = useState(false);
+
+    // ---- Compute mechanic stats from service history ----
+    const mechanicStats = useMemo(() => {
+        const stats: Record<string, { jobsDone: number; totalRevenue: number; lastServiceDate: string }> = {};
+
+        // Initialize all mechanics
+        MECHANICS_DATA.forEach(m => {
+            stats[m.name] = { jobsDone: 0, totalRevenue: 0, lastServiceDate: '' };
+        });
+
+        // Aggregate from all vehicles' service history
+        customers.forEach(c => {
+            c.vehicles.forEach(v => {
+                v.serviceHistory.forEach(s => {
+                    const mechName = s.mechanic || '';
+                    if (stats[mechName]) {
+                        stats[mechName].jobsDone += 1;
+                        stats[mechName].totalRevenue += s.totalCost;
+                        if (!stats[mechName].lastServiceDate || s.date > stats[mechName].lastServiceDate) {
+                            stats[mechName].lastServiceDate = s.date;
+                        }
+                    }
+                });
+            });
+        });
+
+        return stats;
+    }, [customers]);
 
     // Filter
     const filteredProducts = products.filter(p =>
@@ -34,6 +66,13 @@ export default function AdminClient({ products, customers }: { products: Product
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.phone.includes(searchTerm) ||
         (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const filteredEmployees = MECHANICS_DATA.filter(m =>
+        m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.phone.includes(searchTerm) ||
+        m.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     function openProductEdit(product: Product) {
@@ -109,11 +148,47 @@ export default function AdminClient({ products, customers }: { products: Product
         }
     }
 
+    // Helper — role badge color
+    function getRoleBadge(role: Mechanic['role']) {
+        switch (role) {
+            case 'Senior Mechanic': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+            case 'Junior Mechanic': return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+            case 'Specialist': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+            case 'Trainee': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+            default: return 'bg-slate-700 text-slate-300 border-slate-600';
+        }
+    }
+
+    function getStatusBadge(status: Mechanic['status']) {
+        switch (status) {
+            case 'Active': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+            case 'On Leave': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+            case 'Inactive': return 'bg-red-500/20 text-red-400 border-red-500/30';
+            default: return 'bg-slate-700 text-slate-300 border-slate-600';
+        }
+    }
+
+    function formatDate(dateStr: string) {
+        if (!dateStr) return '—';
+        try {
+            return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch { return dateStr; }
+    }
+
+    // Summary stats for employees
+    const empSummary = useMemo(() => {
+        const active = MECHANICS_DATA.filter(m => m.status === 'Active').length;
+        const onLeave = MECHANICS_DATA.filter(m => m.status === 'On Leave').length;
+        const totalJobs = Object.values(mechanicStats).reduce((s, v) => s + v.jobsDone, 0);
+        const totalRev = Object.values(mechanicStats).reduce((s, v) => s + v.totalRevenue, 0);
+        return { active, onLeave, totalJobs, totalRev };
+    }, [mechanicStats]);
+
     return (
         <div>
             {/* Tab Switcher + Search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => { setActiveTab('products'); setSearchTerm(''); }}
                         className={`px-5 py-2.5 rounded-lg font-medium transition-all text-sm ${activeTab === 'products'
@@ -131,6 +206,15 @@ export default function AdminClient({ products, customers }: { products: Product
                             }`}
                     >
                         👥 Customers ({customers.length})
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('employees'); setSearchTerm(''); }}
+                        className={`px-5 py-2.5 rounded-lg font-medium transition-all text-sm ${activeTab === 'employees'
+                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/30'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                            }`}
+                    >
+                        🛠️ Employees ({MECHANICS_DATA.length})
                     </button>
                 </div>
                 <input
@@ -267,6 +351,99 @@ export default function AdminClient({ products, customers }: { products: Product
                             )}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* ========== EMPLOYEES TAB ========== */}
+            {activeTab === 'employees' && (
+                <div className="space-y-6">
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="glass-panel p-4 text-center">
+                            <p className="text-3xl font-bold text-white">{MECHANICS_DATA.length}</p>
+                            <p className="text-slate-400 text-xs mt-1">Total Staff</p>
+                        </div>
+                        <div className="glass-panel p-4 text-center">
+                            <p className="text-3xl font-bold text-emerald-400">{empSummary.active}</p>
+                            <p className="text-slate-400 text-xs mt-1">Active</p>
+                        </div>
+                        <div className="glass-panel p-4 text-center">
+                            <p className="text-3xl font-bold text-yellow-400">{empSummary.onLeave}</p>
+                            <p className="text-slate-400 text-xs mt-1">On Leave</p>
+                        </div>
+                        <div className="glass-panel p-4 text-center">
+                            <p className="text-3xl font-bold text-blue-400">{empSummary.totalJobs}</p>
+                            <p className="text-slate-400 text-xs mt-1">Jobs Completed</p>
+                        </div>
+                    </div>
+
+                    {/* Employees Table */}
+                    <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl overflow-x-auto">
+                        <table className="w-full text-left min-w-[900px]">
+                            <thead>
+                                <tr className="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wider">
+                                    <th className="p-4 border-b border-slate-700">Employee</th>
+                                    <th className="p-4 border-b border-slate-700">Phone</th>
+                                    <th className="p-4 border-b border-slate-700">Role</th>
+                                    <th className="p-4 border-b border-slate-700">Specialization</th>
+                                    <th className="p-4 border-b border-slate-700 text-center">Status</th>
+                                    <th className="p-4 border-b border-slate-700 text-right">Jobs Done</th>
+                                    <th className="p-4 border-b border-slate-700 text-right">Revenue (₹)</th>
+                                    <th className="p-4 border-b border-slate-700 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700/50">
+                                {filteredEmployees.length === 0 ? (
+                                    <tr><td colSpan={8} className="text-center py-8 text-slate-500">No employees found.</td></tr>
+                                ) : (
+                                    filteredEmployees.map(m => {
+                                        const stats = mechanicStats[m.name] || { jobsDone: 0, totalRevenue: 0, lastServiceDate: '' };
+                                        return (
+                                            <tr key={m.id} className="hover:bg-slate-700/30 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                                            {m.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-white">{m.name}</p>
+                                                            <p className="text-slate-500 text-xs">Since {formatDate(m.joinDate)}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-slate-300 text-sm font-mono">{m.phone}</td>
+                                                <td className="p-4">
+                                                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${getRoleBadge(m.role)}`}>
+                                                        {m.role}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-slate-300 text-sm">{m.specialization}</td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${getStatusBadge(m.status)}`}>
+                                                        {m.status === 'Active' ? '● ' : m.status === 'On Leave' ? '◐ ' : '○ '}{m.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right">
+                                                    <span className="font-bold text-white">{stats.jobsDone}</span>
+                                                </td>
+                                                <td className="p-4 text-right font-mono text-emerald-400 font-bold">
+                                                    ₹{stats.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                </td>
+                                                <td className="p-4 text-center">
+                                                    <button
+                                                        onClick={() => setViewingEmployee(m)}
+                                                        className="text-blue-400 hover:text-blue-300 text-sm font-medium hover:underline"
+                                                    >
+                                                        👁 View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
@@ -410,6 +587,73 @@ export default function AdminClient({ products, customers }: { products: Product
                 )}
             </Modal>
 
+            {/* ======= VIEW EMPLOYEE DETAIL MODAL ======= */}
+            <Modal isOpen={!!viewingEmployee} onClose={() => setViewingEmployee(null)} title="👤 Employee Details">
+                {viewingEmployee && (() => {
+                    const stats = mechanicStats[viewingEmployee.name] || { jobsDone: 0, totalRevenue: 0, lastServiceDate: '' };
+                    return (
+                        <div className="space-y-5">
+                            {/* Header */}
+                            <div className="flex items-center gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-700/50">
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-lg">
+                                    {viewingEmployee.name.charAt(0)}
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-xl font-bold text-white">{viewingEmployee.name}</h4>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${getRoleBadge(viewingEmployee.role)}`}>
+                                            {viewingEmployee.role}
+                                        </span>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${getStatusBadge(viewingEmployee.status)}`}>
+                                            {viewingEmployee.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700/40">
+                                    <p className="text-slate-500 text-xs uppercase tracking-wide">Phone</p>
+                                    <p className="text-white font-mono mt-1">{viewingEmployee.phone}</p>
+                                </div>
+                                <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700/40">
+                                    <p className="text-slate-500 text-xs uppercase tracking-wide">Specialization</p>
+                                    <p className="text-white mt-1">{viewingEmployee.specialization}</p>
+                                </div>
+                                <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700/40">
+                                    <p className="text-slate-500 text-xs uppercase tracking-wide">Join Date</p>
+                                    <p className="text-white mt-1">{formatDate(viewingEmployee.joinDate)}</p>
+                                </div>
+                                <div className="bg-slate-800/40 p-3 rounded-lg border border-slate-700/40">
+                                    <p className="text-slate-500 text-xs uppercase tracking-wide">Daily Wage</p>
+                                    <p className="text-emerald-400 mt-1 font-bold">₹{viewingEmployee.dailyWage}</p>
+                                </div>
+                            </div>
+
+                            {/* Performance Stats */}
+                            <div className="border-t border-slate-700 pt-4">
+                                <h5 className="text-sm font-medium text-slate-300 mb-3">📊 Performance</h5>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="text-center bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                                        <p className="text-2xl font-bold text-blue-400">{stats.jobsDone}</p>
+                                        <p className="text-slate-400 text-xs mt-1">Jobs Done</p>
+                                    </div>
+                                    <div className="text-center bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                                        <p className="text-2xl font-bold text-emerald-400">₹{stats.totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                                        <p className="text-slate-400 text-xs mt-1">Revenue</p>
+                                    </div>
+                                    <div className="text-center bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                                        <p className="text-sm font-bold text-purple-400">{stats.lastServiceDate ? formatDate(stats.lastServiceDate) : '—'}</p>
+                                        <p className="text-slate-400 text-xs mt-1">Last Service</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+            </Modal>
+
             {/* ======= DELETE CONFIRMATION MODAL ======= */}
             <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="⚠️ Confirm Delete">
                 {deleteConfirm && (
@@ -419,7 +663,7 @@ export default function AdminClient({ products, customers }: { products: Product
                                 Are you sure you want to permanently delete?
                             </p>
                             <p className="text-white font-bold text-center text-lg mt-2">
-                                "{deleteConfirm.name}"
+                                &quot;{deleteConfirm.name}&quot;
                             </p>
                             <p className="text-slate-400 text-center text-sm mt-1">
                                 ({deleteConfirm.type === 'product' ? 'Product' : 'Customer & all vehicles/history'})

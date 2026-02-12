@@ -8,12 +8,12 @@ export default async function BillingPage() {
 
     return (
         <div className="container animate-fade-in pb-10">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold text-white tracking-tight">
                         Service Billing
                     </h2>
-                    <p className="text-slate-400 mt-1">Create new service invoices and manage billing</p>
+                    <p className="text-[13px] mt-0.5" style={{ color: '#86868B' }}>Create new service invoices and manage billing</p>
                 </div>
             </div>
 

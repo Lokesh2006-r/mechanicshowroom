@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Customer, Product } from '@/types';
 import { saveService } from '@/app/actions';
 import { useRouter } from 'next/navigation';
@@ -8,9 +8,10 @@ import { useRouter } from 'next/navigation';
 interface ServiceFormProps {
     customers: Customer[];
     products: Product[];
+    mechanics: string[];
 }
 
-export default function ServiceForm({ customers, products }: ServiceFormProps) {
+export default function ServiceForm({ customers, products, mechanics }: ServiceFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -24,6 +25,44 @@ export default function ServiceForm({ customers, products }: ServiceFormProps) {
         serviceCharge: 0,
         notes: ''
     });
+
+    // Customer search state
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+    const customerSearchRef = useRef<HTMLDivElement>(null);
+
+    // Filter customers based on search query
+    const filteredCustomers = useMemo(() => {
+        if (!customerSearch.trim()) return customers;
+        const query = customerSearch.toLowerCase();
+        return customers.filter(c =>
+            c.name.toLowerCase().includes(query) ||
+            c.phone.includes(query) ||
+            (c.email && c.email.toLowerCase().includes(query))
+        );
+    }, [customerSearch, customers]);
+
+    // Close customer dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (customerSearchRef.current && !customerSearchRef.current.contains(event.target as Node)) {
+                setShowCustomerDropdown(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelectCustomer = (customer: Customer) => {
+        setFormData({ ...formData, customerId: customer.id, vehicleId: '' });
+        setCustomerSearch(`${customer.name} (${customer.phone})`);
+        setShowCustomerDropdown(false);
+    };
+
+    const handleClearCustomer = () => {
+        setFormData({ ...formData, customerId: '', vehicleId: '' });
+        setCustomerSearch('');
+    };
 
     const [selectedParts, setSelectedParts] = useState<{ productId: string; quantity: number }[]>([]);
 
@@ -124,20 +163,83 @@ export default function ServiceForm({ customers, products }: ServiceFormProps) {
                     <span className="text-blue-400">👤</span> Customer & Vehicle
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-slate-400 mb-2 text-sm">Select Customer</label>
-                        <select
-                            className="input-field w-full"
-                            value={formData.customerId}
-                            onChange={e => setFormData({ ...formData, customerId: e.target.value, vehicleId: '' })}
-                            required
-                        >
-                            <option value="">-- Choose Customer --</option>
-                            {customers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
-                            ))}
-                        </select>
+                    {/* Searchable Customer Input */}
+                    <div ref={customerSearchRef} className="relative">
+                        <label className="block text-slate-400 mb-2 text-sm">Search Customer</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                className="input-field w-full pl-10 pr-10"
+                                placeholder="Type name, phone, or email..."
+                                value={customerSearch}
+                                onChange={e => {
+                                    setCustomerSearch(e.target.value);
+                                    setShowCustomerDropdown(true);
+                                    if (!e.target.value.trim()) {
+                                        handleClearCustomer();
+                                    }
+                                }}
+                                onFocus={() => setShowCustomerDropdown(true)}
+                            />
+                            {formData.customerId && (
+                                <button
+                                    type="button"
+                                    onClick={handleClearCustomer}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-red-400 transition-colors"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Customer Search Dropdown */}
+                        {showCustomerDropdown && !formData.customerId && (
+                            <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto">
+                                {filteredCustomers.length === 0 ? (
+                                    <div className="p-4 text-center text-slate-500 text-sm">
+                                        No customers found matching "{customerSearch}"
+                                    </div>
+                                ) : (
+                                    filteredCustomers.map(c => (
+                                        <button
+                                            key={c.id}
+                                            type="button"
+                                            onClick={() => handleSelectCustomer(c)}
+                                            className="w-full text-left px-4 py-3 hover:bg-slate-700/70 transition-colors border-b border-slate-700/50 last:border-b-0 flex items-center gap-3"
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                {c.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-white text-sm font-medium truncate">{c.name}</p>
+                                                <p className="text-slate-400 text-xs truncate">
+                                                    📞 {c.phone}
+                                                    {c.email && ` · ✉ ${c.email}`}
+                                                    {c.vehicles.length > 0 && ` · 🚗 ${c.vehicles.length} vehicle${c.vehicles.length > 1 ? 's' : ''}`}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        {/* Selected customer indicator */}
+                        {selectedCustomer && (
+                            <div className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-md">
+                                <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">✓</div>
+                                <span className="text-emerald-400 text-xs font-medium">{selectedCustomer.name} selected</span>
+                            </div>
+                        )}
                     </div>
+
                     <div>
                         <label className="block text-slate-400 mb-2 text-sm">Select Vehicle</label>
                         <select
@@ -192,14 +294,17 @@ export default function ServiceForm({ customers, products }: ServiceFormProps) {
                     </div>
                     <div>
                         <label className="block text-slate-400 mb-2 text-sm">Assigned Mechanic</label>
-                        <input
-                            type="text"
+                        <select
                             className="input-field w-full"
-                            placeholder="Mechanic Name"
                             value={formData.mechanic}
                             onChange={e => setFormData({ ...formData, mechanic: e.target.value })}
                             required
-                        />
+                        >
+                            <option value="">-- Select Mechanic --</option>
+                            {mechanics.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
                     </div>
                     <div>
                         <label className="block text-slate-400 mb-2 text-sm">Service Charge (Labor)</label>

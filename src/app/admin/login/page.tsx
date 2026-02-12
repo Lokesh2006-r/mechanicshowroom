@@ -39,103 +39,143 @@ export default function AdminLoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-            {/* Background effects */}
+        <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#1a1a2e' }}>
+            {/* macOS-style ambient glow */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl"></div>
+                <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl"
+                    style={{ background: 'rgba(0, 122, 255, 0.06)', animation: 'floatGlow 8s ease-in-out infinite' }}></div>
+                <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl"
+                    style={{ background: 'rgba(175, 82, 222, 0.05)', animation: 'floatGlow 10s ease-in-out infinite 2s' }}></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-3xl"
+                    style={{ background: 'rgba(48, 209, 88, 0.03)' }}></div>
             </div>
 
-            <div className="w-full max-w-md relative z-10">
-                {/* Logo / Brand */}
+            <div className="w-full max-w-sm relative z-10 animate-mac-bounce">
+                {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-2xl shadow-blue-500/30 mb-4 text-3xl">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-3xl mb-4"
+                        style={{
+                            background: 'linear-gradient(135deg, #007AFF, #5856D6)',
+                            boxShadow: '0 8px 32px rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+                        }}>
                         🔧
                     </div>
-                    <h1 className="text-3xl font-bold text-white">
-                        Mechanic <span className="text-blue-500">Pro</span>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">
+                        Mechanic <span style={{ color: '#007AFF' }}>Pro</span>
                     </h1>
-                    <p className="text-slate-400 mt-2 text-sm">Admin Control Panel</p>
+                    <p className="text-[13px] mt-1" style={{ color: '#86868B' }}>Admin Control Panel</p>
                 </div>
 
-                {/* Login Card */}
-                <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl">
-                    <h2 className="text-xl font-bold text-white mb-1">Welcome back</h2>
-                    <p className="text-slate-400 text-sm mb-6">Sign in to access the admin dashboard</p>
+                {/* macOS Window-style Login Card */}
+                <div style={{
+                    background: 'rgba(30, 30, 56, 0.8)',
+                    backdropFilter: 'blur(40px) saturate(1.8)',
+                    WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '14px',
+                    boxShadow: '0 22px 70px 4px rgba(0,0,0,0.56), 0 0 0 1px rgba(255,255,255,0.03) inset',
+                    overflow: 'hidden',
+                }}>
+                    {/* Titlebar */}
+                    <div className="flex items-center gap-2 px-4 py-3" style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    }}>
+                        <span className="w-3 h-3 rounded-full" style={{ background: '#FF5F57', boxShadow: '0 0 4px rgba(255,95,87,0.4)' }}></span>
+                        <span className="w-3 h-3 rounded-full" style={{ background: '#FFBD2E', boxShadow: '0 0 4px rgba(255,189,46,0.4)' }}></span>
+                        <span className="w-3 h-3 rounded-full" style={{ background: '#28C840', boxShadow: '0 0 4px rgba(40,200,64,0.4)' }}></span>
+                        <span className="flex-1 text-center text-[12px] font-medium pr-12" style={{ color: '#5A5A6E' }}>Sign In</span>
+                    </div>
 
-                    <form onSubmit={handleLogin} className="space-y-5">
-                        {/* Username */}
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Username</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">👤</span>
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={e => setUsername(e.target.value)}
-                                    placeholder="Enter username"
-                                    required
-                                    className="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    autoComplete="username"
-                                />
+                    {/* Form */}
+                    <div className="p-6">
+                        <h2 className="text-lg font-bold text-white mb-0.5">Welcome back</h2>
+                        <p className="text-[13px] mb-5" style={{ color: '#86868B' }}>Sign in to access the admin dashboard</p>
+
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-[12px] font-medium mb-1.5" style={{ color: '#86868B' }}>Username</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#5A5A6E' }}>👤</span>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        onChange={e => setUsername(e.target.value)}
+                                        placeholder="Enter username"
+                                        required
+                                        autoComplete="username"
+                                        className="w-full pl-9 pr-4 py-2.5 text-[13px] text-white rounded-lg"
+                                        style={{
+                                            background: 'rgba(0, 0, 0, 0.3)',
+                                            border: '1px solid rgba(255,255,255,0.06)',
+                                            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Password */}
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">🔒</span>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="Enter password"
-                                    required
-                                    className="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-10 pr-12 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    autoComplete="current-password"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors text-sm"
-                                >
-                                    {showPassword ? '🙈' : '👁️'}
-                                </button>
+                            <div>
+                                <label className="block text-[12px] font-medium mb-1.5" style={{ color: '#86868B' }}>Password</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#5A5A6E' }}>🔒</span>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        placeholder="Enter password"
+                                        required
+                                        autoComplete="current-password"
+                                        className="w-full pl-9 pr-10 py-2.5 text-[13px] text-white rounded-lg"
+                                        style={{
+                                            background: 'rgba(0, 0, 0, 0.3)',
+                                            border: '1px solid rgba(255,255,255,0.06)',
+                                            boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm transition-colors"
+                                        style={{ color: '#5A5A6E' }}
+                                    >
+                                        {showPassword ? '🙈' : '👁️'}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Error Message */}
-                        {error && (
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-center gap-2 animate-shake">
-                                <span className="text-red-400 text-sm">⚠️ {error}</span>
-                            </div>
-                        )}
-
-                        {/* Submit */}
-                        <button
-                            type="submit"
-                            disabled={loading || !username || !password}
-                            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transform hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                    </svg>
-                                    Signing in...
-                                </span>
-                            ) : (
-                                'Sign In →'
+                            {error && (
+                                <div className="rounded-lg p-2.5 flex items-center gap-2" style={{
+                                    background: 'rgba(255,69,58,0.08)',
+                                    border: '1px solid rgba(255,69,58,0.15)',
+                                }}>
+                                    <span className="text-[13px]" style={{ color: '#FF453A' }}>⚠️ {error}</span>
+                                </div>
                             )}
-                        </button>
-                    </form>
+
+                            <button
+                                type="submit"
+                                disabled={loading || !username || !password}
+                                className="w-full text-white font-semibold py-2.5 rounded-lg text-[13px] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0"
+                                style={{
+                                    background: '#007AFF',
+                                    boxShadow: '0 2px 8px rgba(0,122,255,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+                                }}
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                        </svg>
+                                        Signing in...
+                                    </span>
+                                ) : 'Sign In →'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
-                {/* Footer */}
-                <p className="text-center text-slate-600 text-xs mt-6">
+                <p className="text-center text-[11px] mt-5" style={{ color: '#5A5A6E' }}>
                     🔒 Secure admin access only
                 </p>
             </div>

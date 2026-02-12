@@ -19,40 +19,70 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col md:flex-row">
-
-            {/* Mobile Header */}
-            <div className="md:hidden bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center sticky top-0 z-40 shadow-md">
-                <h1 className="text-lg font-bold uppercase tracking-wider">
-                    Mechanic <span className="text-blue-500">Pro</span>
-                </h1>
+        <div className="min-h-screen flex flex-col md:flex-row" style={{
+            background: '#1a1a2e',
+        }}>
+            {/* Mobile Header — macOS-style toolbar */}
+            <div className="md:hidden sticky top-0 z-40 flex justify-between items-center px-4 py-3"
+                style={{
+                    background: 'rgba(18, 18, 36, 0.85)',
+                    backdropFilter: 'blur(20px) saturate(1.5)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
+            >
+                <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center text-xs shadow-lg shadow-blue-500/20">
+                        🔧
+                    </div>
+                    <h1 className="text-sm font-bold text-white tracking-tight">
+                        Mechanic <span className="text-[#007AFF]">Pro</span>
+                    </h1>
+                </div>
                 <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all"
+                    style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#86868B',
+                    }}
                 >
                     {isSidebarOpen ? '✕' : '☰'}
                 </button>
             </div>
 
-            {/* Sidebar with Mobile Logic */}
+            {/* Sidebar */}
             <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen md:sticky md:top-0
-        ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
-      `}>
+                fixed inset-y-0 left-0 z-50 w-60 transform transition-transform duration-300 ease-out
+                md:translate-x-0 md:static md:h-screen md:sticky md:top-0
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            `} style={{
+                    borderRight: '1px solid rgba(255,255,255,0.04)',
+                }}>
                 <Sidebar onCloseMobile={() => setIsSidebarOpen(false)} />
             </div>
 
             {/* Overlay for mobile sidebar */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+                    className="fixed inset-0 z-40 md:hidden"
+                    style={{
+                        background: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(4px)',
+                    }}
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
 
-            {/* Main Content */}
-            <main className="flex-1 p-4 md:p-8 overflow-y-auto h-auto md:h-screen scroll-smooth">
-                <div className="max-w-7xl mx-auto">
+            {/* Main Content Area */}
+            <main className="flex-1 overflow-y-auto h-auto md:h-screen scroll-smooth relative">
+                {/* Subtle top toolbar line */}
+                <div className="hidden md:block sticky top-0 z-10 h-10" style={{
+                    background: 'linear-gradient(180deg, rgba(26,26,46,0.95) 0%, rgba(26,26,46,0) 100%)',
+                    pointerEvents: 'none',
+                }}></div>
+
+                <div className="max-w-7xl mx-auto relative z-1 -mt-4 md:-mt-6">
                     {children}
                 </div>
             </main>
