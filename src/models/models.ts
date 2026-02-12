@@ -1,6 +1,6 @@
 
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { Product, Customer, ServiceRecord } from '@/types/index';
+import { Product, Customer, ServiceRecord, User } from '@/types/index';
 
 // Products Schema
 // We'll use the 'randomUUID' logic if needed, but Mongo uses `_id` by default.
@@ -54,6 +54,17 @@ const CustomerSchema = new Schema<Customer>({
     vehicles: [VehicleSchema]
 });
 
+
+// User Schema for Authentication
+const UserSchema = new Schema<User>({
+    id: { type: String, required: true, unique: true },
+    username: { type: String, required: true, unique: true },
+    passwordHash: { type: String, required: true },
+    role: { type: String, enum: ['admin', 'employee'], required: true }, // critical for role-based access
+    name: { type: String, required: true }
+});
+
 // Create Models (singleton pattern check)
 export const ProductModel = (mongoose.models.Product as Model<Product>) || mongoose.model<Product>('Product', ProductSchema);
 export const CustomerModel = (mongoose.models.Customer as Model<Customer>) || mongoose.model<Customer>('Customer', CustomerSchema);
+export const UserModel = (mongoose.models.User as Model<User>) || mongoose.model<User>('User', UserSchema);

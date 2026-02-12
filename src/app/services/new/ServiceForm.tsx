@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Customer, Product } from '@/types';
-import { saveService } from '@/app/actions';
+import { saveService, addVehicle } from '@/app/actions';
 import { useRouter } from 'next/navigation';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface ServiceFormProps {
     customers: Customer[];
@@ -31,6 +32,11 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const customerSearchRef = useRef<HTMLDivElement>(null);
 
+    // Add vehicle inline state
+    const [showAddVehicleForm, setShowAddVehicleForm] = useState(false);
+    const [addingVehicle, setAddingVehicle] = useState(false);
+    const [newVehicleType, setNewVehicleType] = useState('Car - Sedan'); // State for inline form custom select
+
     // Filter customers based on search query
     const filteredCustomers = useMemo(() => {
         if (!customerSearch.trim()) return customers;
@@ -57,11 +63,30 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
         setFormData({ ...formData, customerId: customer.id, vehicleId: '' });
         setCustomerSearch(`${customer.name} (${customer.phone})`);
         setShowCustomerDropdown(false);
+        setShowAddVehicleForm(false);
     };
 
     const handleClearCustomer = () => {
         setFormData({ ...formData, customerId: '', vehicleId: '' });
         setCustomerSearch('');
+        setShowAddVehicleForm(false);
+    };
+
+    const handleAddVehicleInline = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setAddingVehicle(true);
+        try {
+            const form = e.currentTarget;
+            const fd = new FormData(form);
+            await addVehicle(fd);
+            setShowAddVehicleForm(false);
+            // Refresh the page to get updated customer data with the new vehicle
+            router.refresh();
+        } catch (err: any) {
+            setError(err.message || 'Failed to add vehicle.');
+        } finally {
+            setAddingVehicle(false);
+        }
     };
 
     const [selectedParts, setSelectedParts] = useState<{ productId: string; quantity: number }[]>([]);
@@ -91,6 +116,41 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
 
         return { partsCost, partsGst, serviceCharge, serviceGst, totalGst, totalCost };
     }, [selectedParts, formData.serviceCharge, products]);
+
+    // Options for CustomSelects
+    const vehicleOptions = useMemo(() => availableVehicles.map(v => ({
+        value: v.id,
+        label: `${v.modelName} - ${v.vehicleNumber}`
+    })), [availableVehicles]);
+
+    const mechanicOptions = useMemo(() => mechanics.map(m => ({
+        value: m,
+        label: m
+    })), [mechanics]);
+
+    const productOptions = useMemo(() => products.map(p => ({
+        value: p.id,
+        label: `${p.name} (Stock: ${p.quantity}) - ₹${p.price}`
+    })), [products]);
+
+    const serviceTypeOptions = [
+        { value: 'General Service', label: 'General Service' },
+        { value: 'Oil Change', label: 'Oil Change' },
+        { value: 'Brake Repair', label: 'Brake Repair' },
+        { value: 'Engine Tuning', label: 'Engine Tuning' },
+        { value: 'Major Repair', label: 'Major Repair' },
+        { value: 'Other', label: 'Other' }
+    ];
+
+    const vehicleTypeOptions = [
+        { value: 'Car - Sedan', label: 'Car - Sedan' },
+        { value: 'Car - SUV', label: 'Car - SUV' },
+        { value: 'Car - Hatchback', label: 'Car - Hatchback' },
+        { value: 'Bike - Sport', label: 'Bike - Sport' },
+        { value: 'Bike - Commuter', label: 'Bike - Commuter' },
+        { value: 'Scooter', label: 'Scooter' },
+        { value: 'Other', label: 'Other' }
+    ];
 
     const handleAddPart = () => {
         setSelectedParts([...selectedParts, { productId: '', quantity: 1 }]);
@@ -158,7 +218,7 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
             )}
 
             {/* Customer & Vehicle Selection */}
-            <div className="glass-panel p-6 space-y-6">
+            <div className="glass-panel p-6 space-y-6 !overflow-visible relative z-20">
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span className="text-blue-400">👤</span> Customer & Vehicle
                 </h3>
@@ -204,7 +264,7 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
                             <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-60 overflow-y-auto">
                                 {filteredCustomers.length === 0 ? (
                                     <div className="p-4 text-center text-slate-500 text-sm">
-                                        No customers found matching "{customerSearch}"
+                                        No customers found matching &quot;{customerSearch}&quot;
                                     </div>
                                 ) : (
                                     filteredCustomers.map(c => (
@@ -235,30 +295,91 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
                         {selectedCustomer && (
                             <div className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-md">
                                 <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">✓</div>
-                                <span className="text-emerald-400 text-xs font-medium">{selectedCustomer.name} selected</span>
+                                <span className="text-emerald-400 text-xs font-medium">{selectedCustomer.name} selected · {availableVehicles.length} vehicle{availableVehicles.length !== 1 ? 's' : ''}</span>
                             </div>
                         )}
                     </div>
 
                     <div>
-                        <label className="block text-slate-400 mb-2 text-sm">Select Vehicle</label>
-                        <select
-                            className="input-field w-full"
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-slate-400 text-sm">Select Vehicle</label>
+                            {formData.customerId && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddVehicleForm(!showAddVehicleForm)}
+                                    className="text-emerald-400 hover:text-emerald-300 text-xs font-semibold flex items-center gap-1 transition-colors"
+                                >
+                                    {showAddVehicleForm ? '✕ Cancel' : '+ New Vehicle'}
+                                </button>
+                            )}
+                        </div>
+                        <CustomSelect
+                            className="w-full"
                             value={formData.vehicleId}
-                            onChange={e => setFormData({ ...formData, vehicleId: e.target.value })}
-                            disabled={!formData.customerId}
-                            required
-                        >
-                            <option value="">-- Choose Vehicle --</option>
-                            {availableVehicles.map(v => (
-                                <option key={v.id} value={v.id}>{v.modelName} - {v.vehicleNumber}</option>
-                            ))}
-                        </select>
-                        {formData.customerId && availableVehicles.length === 0 && (
-                            <p className="text-xs text-yellow-500 mt-2">No vehicles found for this customer.</p>
+                            onChange={(val) => setFormData({ ...formData, vehicleId: val })}
+                            options={vehicleOptions}
+                            placeholder="-- Choose Vehicle --"
+                        />
+                        {formData.customerId && availableVehicles.length === 0 && !showAddVehicleForm && (
+                            <p className="text-xs text-yellow-500 mt-2">No vehicles found. Click &quot;+ New Vehicle&quot; to add one.</p>
                         )}
                     </div>
                 </div>
+
+                {/* Inline Add Vehicle Form */}
+                {showAddVehicleForm && formData.customerId && (
+                    <div className="mt-4 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl animate-fade-in">
+                        <h4 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                            <span>🚗</span> Add New Vehicle for {selectedCustomer?.name}
+                        </h4>
+                        <form onSubmit={handleAddVehicleInline} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="hidden" name="customerId" value={formData.customerId} />
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Vehicle No.</label>
+                                <input
+                                    name="vehicleNumber"
+                                    required
+                                    placeholder="KA-01-XX-1234"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Model Name</label>
+                                <input
+                                    name="modelName"
+                                    required
+                                    placeholder="e.g. Swift Dzire"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-400 mb-1">Vehicle Type</label>
+                                <CustomSelect
+                                    name="vehicleType"
+                                    value={newVehicleType}
+                                    onChange={setNewVehicleType}
+                                    options={vehicleTypeOptions}
+                                />
+                            </div>
+                            <div className="md:col-span-3">
+                                <button
+                                    type="submit"
+                                    disabled={addingVehicle}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {addingVehicle ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                            Adding...
+                                        </>
+                                    ) : (
+                                        '✓ Add Vehicle & Continue'
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </div>
 
             {/* Service Details */}
@@ -279,32 +400,22 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
                     </div>
                     <div>
                         <label className="block text-slate-400 mb-2 text-sm">Service Type</label>
-                        <select
-                            className="input-field w-full"
+                        <CustomSelect
+                            className="w-full"
                             value={formData.type}
-                            onChange={e => setFormData({ ...formData, type: e.target.value })}
-                        >
-                            <option>General Service</option>
-                            <option>Oil Change</option>
-                            <option>Brake Repair</option>
-                            <option>Engine Tuning</option>
-                            <option>Major Repair</option>
-                            <option>Other</option>
-                        </select>
+                            onChange={(val) => setFormData({ ...formData, type: val })}
+                            options={serviceTypeOptions}
+                        />
                     </div>
                     <div>
                         <label className="block text-slate-400 mb-2 text-sm">Assigned Mechanic</label>
-                        <select
-                            className="input-field w-full"
+                        <CustomSelect
+                            className="w-full"
                             value={formData.mechanic}
-                            onChange={e => setFormData({ ...formData, mechanic: e.target.value })}
-                            required
-                        >
-                            <option value="">-- Select Mechanic --</option>
-                            {mechanics.map(name => (
-                                <option key={name} value={name}>{name}</option>
-                            ))}
-                        </select>
+                            onChange={(val) => setFormData({ ...formData, mechanic: val })}
+                            options={mechanicOptions}
+                            placeholder="-- Select Mechanic --"
+                        />
                     </div>
                     <div>
                         <label className="block text-slate-400 mb-2 text-sm">Service Charge (Labor)</label>
@@ -342,7 +453,7 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
 
                 {selectedParts.length === 0 ? (
                     <div className="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">
-                        No parts added yet. Click "+ Add Part" to select inventory items.
+                        No parts added yet. Click &quot;+ Add Part&quot; to select inventory items.
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -350,19 +461,15 @@ export default function ServiceForm({ customers, products, mechanics }: ServiceF
                             <div key={index} className="flex gap-4 items-end bg-slate-800/30 p-3 rounded-lg border border-slate-700/50">
                                 <div className="flex-1">
                                     <label className="text-xs text-slate-400 mb-1 block">Product</label>
-                                    <select
-                                        className="input-field w-full text-sm py-1.5"
+                                    <CustomSelect
+                                        className="w-full"
                                         value={part.productId}
-                                        onChange={e => handlePartChange(index, 'productId', e.target.value)}
-                                        required
-                                    >
-                                        <option value="">Select Part...</option>
-                                        {products.map(p => (
-                                            <option key={p.id} value={p.id} disabled={p.quantity <= 0}>
-                                                {p.name} (Stock: {p.quantity}) - ₹{p.price}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => handlePartChange(index, 'productId', val)}
+                                        options={productOptions.filter(p => !p.label.includes('Stock: 0') || p.value === part.productId)} // Basic filtering to hide OOS? Actually CustomSelect doesn't support disabling options easily yet.
+                                    // Wait, CustomSelect options don't support 'disabled' yet.
+                                    // But I can just pass all options.
+                                    // Or filter them.
+                                    />
                                 </div>
                                 <div className="w-24">
                                     <label className="text-xs text-slate-400 mb-1 block">Qty</label>

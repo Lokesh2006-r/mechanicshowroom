@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Product, Customer } from '@/types';
 import { useRouter } from 'next/navigation';
 import { MECHANICS_LIST } from '@/lib/constants';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 // --------------- Invoice HTML Generator ---------------
 function generateInvoiceHTML({
@@ -271,6 +272,28 @@ export default function BillingClient({ products, customers }: { products: Produ
     const customerVehicles = selectedCustomer ? selectedCustomer.vehicles : [];
     const selectedVehicle = customerVehicles.find(v => v.id === selectedVehicleId);
 
+    // Options for CustomSelect
+    const vehicleOptions = useMemo(() => customerVehicles.map(v => ({
+        value: v.id,
+        label: `${v.vehicleNumber} - ${v.modelName}`
+    })), [customerVehicles]);
+
+    const serviceTypeOptions = [
+        { value: 'General Service', label: 'General Service' },
+        { value: 'Oil Change', label: 'Oil Change' },
+        { value: 'Brake Repair', label: 'Brake Repair' },
+        { value: 'Engine Tuning', label: 'Engine Tuning' },
+        { value: 'Washing / Cleaning', label: 'Washing / Cleaning' },
+        { value: 'Inspection', label: 'Inspection' }
+    ];
+
+    const mechanicOptions = MECHANICS_LIST.map(m => ({ value: m, label: m }));
+
+    const productOptions = useMemo(() => products.map(p => ({
+        value: p.id,
+        label: `${p.name} (Stock: ${p.quantity}) - ₹${p.price}`
+    })), [products]);
+
     // ---- Invoice Data helper ----
     const getInvoiceData = useCallback(() => {
         if (!selectedCustomer || !selectedVehicle) return null;
@@ -361,7 +384,7 @@ export default function BillingClient({ products, customers }: { products: Produ
             <div className="flex-1 space-y-6">
 
                 {/* Customer & Vehicle Selection */}
-                <div className="mac-window">
+                <div className="mac-window !overflow-visible relative z-20">
                     <div className="mac-window-titlebar">
                         <div className="mac-window-dots">
                             <span className="mac-window-dot red"></span>
@@ -453,18 +476,13 @@ export default function BillingClient({ products, customers }: { products: Produ
 
                             <div>
                                 <label className="block text-[12px] font-medium mb-1.5" style={{ color: '#86868B' }}>Select Vehicle</label>
-                                <select
+                                <CustomSelect
                                     value={selectedVehicleId}
-                                    onChange={e => setSelectedVehicleId(e.target.value)}
-                                    className="w-full rounded-lg p-2.5 text-[13px] text-white"
-                                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}
-                                    disabled={!selectedCustomerId}
-                                >
-                                    <option value="">-- Choose Vehicle --</option>
-                                    {customerVehicles.map(v => (
-                                        <option key={v.id} value={v.id}>{v.vehicleNumber} - {v.modelName}</option>
-                                    ))}
-                                </select>
+                                    onChange={setSelectedVehicleId}
+                                    options={vehicleOptions}
+                                    placeholder="-- Choose Vehicle --"
+                                    className="w-full"
+                                />
                             </div>
                         </div>
 
@@ -490,7 +508,7 @@ export default function BillingClient({ products, customers }: { products: Produ
                 </div>
 
                 {/* Service Info */}
-                <div className="mac-window">
+                <div className="mac-window !overflow-visible z-10 relative">
                     <div className="mac-window-titlebar">
                         <div className="mac-window-dots">
                             <span className="mac-window-dot red"></span>
@@ -509,27 +527,20 @@ export default function BillingClient({ products, customers }: { products: Produ
                             </div>
                             <div>
                                 <label className="block text-[12px] font-medium mb-1.5" style={{ color: '#86868B' }}>Service Type</label>
-                                <select value={serviceType} onChange={e => setServiceType(e.target.value)}
-                                    className="w-full rounded-lg p-2.5 text-[13px] text-white"
-                                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                    <option>General Service</option>
-                                    <option>Oil Change</option>
-                                    <option>Brake Repair</option>
-                                    <option>Engine Tuning</option>
-                                    <option>Washing / Cleaning</option>
-                                    <option>Inspection</option>
-                                </select>
+                                <CustomSelect
+                                    value={serviceType}
+                                    onChange={setServiceType}
+                                    options={serviceTypeOptions}
+                                />
                             </div>
                             <div>
                                 <label className="block text-[12px] font-medium mb-1.5" style={{ color: '#86868B' }}>Assigned Mechanic</label>
-                                <select value={mechanic} onChange={e => setMechanic(e.target.value)}
-                                    className="w-full rounded-lg p-2.5 text-[13px] text-white"
-                                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                    <option value="">-- Select Mechanic --</option>
-                                    {MECHANICS_LIST.map(name => (
-                                        <option key={name} value={name}>{name}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    value={mechanic}
+                                    onChange={setMechanic}
+                                    options={mechanicOptions}
+                                    placeholder="-- Select Mechanic --"
+                                />
                             </div>
                             <div>
                                 <label className="block text-[12px] font-medium mb-1.5" style={{ color: '#86868B' }}>Labor Charge (₹)</label>
@@ -549,7 +560,7 @@ export default function BillingClient({ products, customers }: { products: Produ
                 </div>
 
                 {/* Parts Usage */}
-                <div className="mac-window">
+                <div className="mac-window !overflow-visible z-0 relative">
                     <div className="mac-window-titlebar">
                         <div className="mac-window-dots">
                             <span className="mac-window-dot red"></span>
@@ -572,16 +583,12 @@ export default function BillingClient({ products, customers }: { products: Produ
                                 return (
                                     <div key={index} className="flex gap-2 items-start">
                                         <div className="flex-grow">
-                                            <select value={part.productId} onChange={e => updatePartLine(index, 'productId', e.target.value)}
-                                                className="w-full rounded-lg p-2.5 text-[13px] text-white"
-                                                style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                                <option value="">Select Part...</option>
-                                                {products.map(p => (
-                                                    <option key={p.id} value={p.id} disabled={p.quantity === 0}>
-                                                        {p.name} (Stock: {p.quantity}) - ₹{p.price}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <CustomSelect
+                                                value={part.productId}
+                                                onChange={(val) => updatePartLine(index, 'productId', val)}
+                                                options={productOptions}
+                                                placeholder="Select Part..."
+                                            />
                                         </div>
                                         <div className="w-20">
                                             <input type="number" min="1" max={maxStock} value={part.quantity}

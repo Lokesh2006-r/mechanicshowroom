@@ -7,6 +7,7 @@ const menuItems = [
     { name: 'Inventory & Stock', path: '/inventory', icon: '🔧' },
     { name: 'Customer Records', path: '/customers', icon: '👥' },
     { name: 'Service Billing', path: '/billing', icon: '📝' },
+    { name: 'Reports', path: '/reports', icon: '📑' },
     { name: 'Analytics', path: '/analytics', icon: '📈' },
     { name: 'Admin Panel', path: '/admin', icon: '⚙️' },
 ];
@@ -92,18 +93,31 @@ export default function Sidebar({ onCloseMobile }: { onCloseMobile: () => void }
             </nav>
 
             {/* macOS-style User chip */}
+            {/* macOS-style User chip & Logout */}
             <div className="px-3 pb-5 pt-2 border-t border-white/5">
-                <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#5856D6] to-[#AF52DE] flex items-center justify-center text-sm font-bold text-white shadow-md relative">
-                        A
-                        {/* Online status dot */}
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#28C840] border-2 border-[#121224] shadow-[0_0_6px_rgba(40,200,64,0.5)]"></span>
+                <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors group">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#5856D6] to-[#AF52DE] flex items-center justify-center text-sm font-bold text-white shadow-md relative">
+                            👤
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#28C840] border-2 border-[#121224]"></span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">Current User</p>
+                            <p className="text-[10px] text-[#5A5A6E] truncate">Online</p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">Admin User</p>
-                        <p className="text-[10px] text-[#5A5A6E] truncate">Workshop Owner</p>
-                    </div>
-                    <span className="text-[#5A5A6E] group-hover:text-[#86868B] transition-colors text-xs">⋯</span>
+                    <button
+                        onClick={async () => {
+                            // Dynamic import to handle server action
+                            const { logoutUser } = await import('@/app/actions');
+                            await logoutUser();
+                            window.location.href = '/login'; // Force full reload/redirect
+                        }}
+                        className="text-xs text-red-400 hover:text-red-300 transition-colors p-2 hover:bg-red-500/10 rounded-md"
+                        title="Sign Out"
+                    >
+                        Logout
+                    </button>
                 </div>
             </div>
         </aside>

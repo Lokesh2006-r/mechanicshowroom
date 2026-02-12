@@ -13,8 +13,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setIsSidebarOpen(false);
     }, [pathname]);
 
-    // Skip sidebar for login page
-    if (pathname === '/admin/login') {
+    // Skip sidebar for login pages
+    if (pathname === '/admin/login' || pathname.startsWith('/login')) {
         return <>{children}</>;
     }
 

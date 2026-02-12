@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Product, Customer } from '@/types';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/ui/Modal';
+import CustomSelect from '@/components/ui/CustomSelect';
 import { MECHANICS_DATA, Mechanic } from '@/lib/constants';
 
 export default function AdminClient({ products, customers }: { products: Product[], customers: Customer[] }) {
@@ -462,14 +463,14 @@ export default function AdminClient({ products, customers }: { products: Product
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm text-slate-400 mb-1">Category</label>
-                                <select
-                                    value={editForm.category || ''}
-                                    onChange={e => setEditForm({ ...editForm, category: e.target.value as any })}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
-                                >
-                                    <option value="Tool">Tool</option>
-                                    <option value="Spare Part">Spare Part</option>
-                                </select>
+                                <CustomSelect
+                                    value={editForm.category || 'Tool'}
+                                    onChange={(val) => setEditForm({ ...editForm, category: val as any })}
+                                    options={[
+                                        { value: 'Tool', label: 'Tool' },
+                                        { value: 'Spare Part', label: 'Spare Part' }
+                                    ]}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm text-slate-400 mb-1">Supplier</label>

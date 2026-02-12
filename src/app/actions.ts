@@ -1,10 +1,17 @@
 'use server';
 
 import dbConnect from '@/lib/mongodb';
-import { ProductModel, CustomerModel } from '@/models/models';
+import { ProductModel, CustomerModel, UserModel } from '@/models/models';
 import { Product, Customer, ServiceRecord } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
+import { cookies } from 'next/headers';
+
+// Helper to hash password (simple SHA256 for prototype)
+function hashPassword(password: string) {
+    return createHash('sha256').update(password).digest('hex');
+}
+
 
 export async function addProduct(formData: FormData) {
     await dbConnect();
@@ -248,3 +255,112 @@ export async function deleteCustomer(customerId: string) {
     return { success: true };
 }
 
+// ==================== AUTH ACTIONS ====================
+
+export async function loginUser(formData: FormData) {
+    await dbConnect();
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+    const expectedRole = formData.get('role') as string; // 'admin' or 'employee'
+
+    // Seed users if DB is empty (quick hack for prototype setup)
+    const userCount = await UserModel.countDocuments();
+    if (userCount === 0) {
+        console.log('Seeding default users...');
+        await UserModel.create([
+            { id: randomUUID(), username: 'admin', passwordHash: hashPassword('admin123'), role: 'admin', name: 'Admin User' },
+            { id: randomUUID(), username: 'employee', passwordHash: hashPassword('emp123'), role: 'employee', name: 'Employee User' }
+        ]);
+    }
+
+    const user = await UserModel.findOne({ username });
+    if (!user) {
+        throw new Error('Invalid username or password');
+    }
+
+    if (hashPassword(password) !== user.passwordHash) {
+        throw new Error('Invalid username or password');
+    }
+
+    if (user.role !== expectedRole) {
+        // Security: Maybe don't reveal role mismatch, but for UI clarity:
+        throw new Error(`This account is not authorized for ${expectedRole} login.`);
+    }
+
+    // Set cookie
+    const sessionData = JSON.stringify({ id: user.id, username: user.username, role: user.role, name: user.name });
+
+    // Valid for 24 hours
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    (await cookies()).set('session', sessionData, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        expires
+    });
+
+    return { success: true, role: user.role };
+}
+
+export async function logoutUser() {
+    (await cookies()).delete('session');
+    // Using redirect here might valid
+}
+
+export async function getFinancialReport(startDate: string, endDate: string) {
+    await dbConnect();
+
+    // Ensure endDate covers the full day (lexicographically)
+    const endDateTime = endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`;
+
+    // Aggregation pipeline to sum up stats across all customers' service history
+    // We treat 'date' as string (ISO), so string comparison works.
+    const result = await CustomerModel.aggregate([
+        { $unwind: "$vehicles" },
+        { $unwind: "$vehicles.serviceHistory" },
+        {
+            $match: {
+                "vehicles.serviceHistory.date": {
+                    $gte: startDate,
+                    $lte: endDateTime
+                }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: "$vehicles.serviceHistory.totalCost" },
+                totalGST: { $sum: "$vehicles.serviceHistory.gstAmount" },
+                totalServiceCharge: { $sum: "$vehicles.serviceHistory.serviceCharge" },
+                serviceCount: { $sum: 1 }
+            }
+        }
+    ]);
+
+    const stats = result[0] || { totalRevenue: 0, totalGST: 0, totalServiceCharge: 0, serviceCount: 0 };
+
+    // Derived Metrics
+    // Labor GST = Service Charge * 0.18
+    const laborGST = stats.totalServiceCharge * 0.18;
+    const laborGross = stats.totalServiceCharge + laborGST;
+
+    // Parts Gross = Total Revenue - Labor Gross
+    const partsGross = stats.totalRevenue - laborGross;
+
+    // Parts GST = Total GST - Labor GST
+    const partsGST = stats.totalGST - laborGST;
+
+    // Parts Net = Parts Gross - Parts GST
+    const partsNet = partsGross - partsGST;
+
+    return {
+        totalRevenue: stats.totalRevenue,
+        totalGST: stats.totalGST,
+        serviceCount: stats.serviceCount,
+        laborRevenue: stats.totalServiceCharge, // Net Labor
+        partsRevenue: partsNet, // Net Parts
+        laborGross,
+        partsGross
+    };
+}

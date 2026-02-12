@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Product } from '@/types';
 import Modal from '@/components/ui/Modal';
+import CustomSelect from '@/components/ui/CustomSelect';
 import { useRouter } from 'next/navigation';
 
 export default function InventoryClient({ initialProducts }: { initialProducts: Product[] }) {
@@ -12,6 +13,10 @@ export default function InventoryClient({ initialProducts }: { initialProducts: 
     const [filter, setFilter] = useState<'All' | 'Tool' | 'Spare Part'>('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Form state for custom selects
+    const [formCategory, setFormCategory] = useState("Tool");
+    const [formGstRate, setFormGstRate] = useState("18");
 
     // Filter products based on category and search
     const filteredProducts = products.filter(p => {
@@ -59,15 +64,21 @@ export default function InventoryClient({ initialProducts }: { initialProducts: 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    <select
-                        className="bg-slate-800 border-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                    <CustomSelect
+                        className="w-full sm:w-auto min-w-[200px]"
                         value={filter}
-                        onChange={(e) => setFilter(e.target.value as any)}
-                    >
-                        <option value="All">All Categories</option>
-                        <option value="Tool">Tools</option>
-                        <option value="Spare Part">Spare Parts</option>
-                    </select>
+                        onChange={(val) => setFilter(val as any)}
+                        options={[
+                            { value: "All", label: "All Categories" },
+                            { value: "Tool", label: "Tools" },
+                            { value: "Spare Part", label: "Spare Parts" }
+                        ]}
+                        icon={
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                        }
+                    />
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -139,10 +150,15 @@ export default function InventoryClient({ initialProducts }: { initialProducts: 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
-                            <select name="category" className="w-full bg-slate-900 border-slate-700 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500">
-                                <option value="Tool">Tool</option>
-                                <option value="Spare Part">Spare Part</option>
-                            </select>
+                            <CustomSelect
+                                name="category"
+                                value={formCategory}
+                                onChange={setFormCategory}
+                                options={[
+                                    { value: "Tool", label: "Tool" },
+                                    { value: "Spare Part", label: "Spare Part" }
+                                ]}
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">Supplier</label>
@@ -157,12 +173,17 @@ export default function InventoryClient({ initialProducts }: { initialProducts: 
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">GST Rate (%)</label>
-                            <select name="gstRate" className="w-full bg-slate-900 border-slate-700 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500">
-                                <option value="18">18%</option>
-                                <option value="12">12%</option>
-                                <option value="5">5%</option>
-                                <option value="28">28%</option>
-                            </select>
+                            <CustomSelect
+                                name="gstRate"
+                                value={formGstRate}
+                                onChange={setFormGstRate}
+                                options={[
+                                    { value: "18", label: "18%" },
+                                    { value: "12", label: "12%" },
+                                    { value: "5", label: "5%" },
+                                    { value: "28", label: "28%" }
+                                ]}
+                            />
                         </div>
                     </div>
 

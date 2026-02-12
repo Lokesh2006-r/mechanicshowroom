@@ -39,6 +39,14 @@ export interface Customer {
     vehicles: Vehicle[];
 }
 
+export interface User {
+    id: string;
+    username: string; // unique identifier for login
+    passwordHash: string;
+    role: 'admin' | 'employee';
+    name: string; // Display name
+}
+
 export interface ShopStats {
     totalRevenue: number;
     totalStockValue: number;

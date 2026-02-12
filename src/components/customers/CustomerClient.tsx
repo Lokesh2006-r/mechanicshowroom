@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Customer, Vehicle } from '@/types';
 import Modal from '@/components/ui/Modal';
+import CustomSelect from '@/components/ui/CustomSelect';
 import { useRouter } from 'next/navigation';
 
 export default function CustomerClient({ initialCustomers }: { initialCustomers: Customer[] }) {
@@ -55,6 +56,20 @@ export default function CustomerClient({ initialCustomers }: { initialCustomers:
     const [isAddVehicleModalOpen, setIsAddVehicleModalOpen] = useState(false);
     const [customerForVehicle, setCustomerForVehicle] = useState<Customer | null>(null);
 
+    // Form states for CustomSelect
+    const [addCustomerVehicleType, setAddCustomerVehicleType] = useState('Car - Sedan');
+    const [addVehicleModalType, setAddVehicleModalType] = useState('Car - Sedan');
+
+    const vehicleTypeOptions = [
+        { value: 'Car - Sedan', label: 'Car - Sedan' },
+        { value: 'Car - SUV', label: 'Car - SUV' },
+        { value: 'Car - Hatchback', label: 'Car - Hatchback' },
+        { value: 'Bike - Sport', label: 'Bike - Sport' },
+        { value: 'Bike - Commuter', label: 'Bike - Commuter' },
+        { value: 'Scooter', label: 'Scooter' },
+        { value: 'Other', label: 'Other' }
+    ];
+
     async function handleAddVehicle(formData: FormData) {
         const { addVehicle } = await import('@/app/actions');
         await addVehicle(formData);
@@ -95,7 +110,7 @@ export default function CustomerClient({ initialCustomers }: { initialCustomers:
                             <th className="p-4 border-b border-slate-700">Customer</th>
                             <th className="p-4 border-b border-slate-700">Last Service</th>
                             <th className="p-4 border-b border-slate-700">Next Due</th>
-                            <th className="p-4 border-b border-slate-700 text-center">History</th>
+                            <th className="p-4 border-b border-slate-700 text-center">Services</th>
                             <th className="p-4 border-b border-slate-700 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -158,6 +173,13 @@ export default function CustomerClient({ initialCustomers }: { initialCustomers:
                                         <td className="p-4">
                                             <div className="font-medium text-white">{customer.name}</div>
                                             <div className="text-sm text-slate-400">{customer.phone}</div>
+                                            {customer.vehicles.length > 1 && (
+                                                <div className="mt-1">
+                                                    <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full">
+                                                        🚗 {customer.vehicles.length} vehicles
+                                                    </span>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-4 text-sm text-slate-300">
                                             {lastService ? (
@@ -189,19 +211,28 @@ export default function CustomerClient({ initialCustomers }: { initialCustomers:
                                                 {vehicle.serviceHistory.length}
                                             </span>
                                         </td>
-                                        <td className="p-4 text-right space-x-2">
-                                            <button
-                                                onClick={() => openEditModal(customer)}
-                                                className="text-slate-400 hover:text-white text-sm font-medium hover:underline"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => setSelectedVehicleData({ customer, vehicle })}
-                                                className="text-blue-400 hover:text-blue-300 text-sm font-medium hover:underline"
-                                            >
-                                                History
-                                            </button>
+                                        <td className="p-4 text-right">
+                                            <div className="flex items-center justify-end gap-2 flex-wrap">
+                                                <button
+                                                    onClick={() => openAddVehicleModal(customer)}
+                                                    title="Add another vehicle for this customer"
+                                                    className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 text-xs font-semibold px-2 py-1 rounded border border-emerald-500/30 transition-all"
+                                                >
+                                                    + Vehicle
+                                                </button>
+                                                <button
+                                                    onClick={() => openEditModal(customer)}
+                                                    className="text-slate-400 hover:text-white text-sm font-medium hover:underline"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => setSelectedVehicleData({ customer, vehicle })}
+                                                    className="text-blue-400 hover:text-blue-300 text-sm font-medium hover:underline"
+                                                >
+                                                    History
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -285,15 +316,12 @@ export default function CustomerClient({ initialCustomers }: { initialCustomers:
                             </div>
                             <div className="col-span-2">
                                 <label className="block text-sm text-slate-400 mb-1">Vehicle Type</label>
-                                <select name="vehicleType" className="w-full bg-slate-900 border-slate-700 rounded p-2 text-white">
-                                    <option>Car - Sedan</option>
-                                    <option>Car - SUV</option>
-                                    <option>Car - Hatchback</option>
-                                    <option>Bike - Sport</option>
-                                    <option>Bike - Commuter</option>
-                                    <option>Scooter</option>
-                                    <option>Other</option>
-                                </select>
+                                <CustomSelect
+                                    name="vehicleType"
+                                    value={addCustomerVehicleType}
+                                    onChange={setAddCustomerVehicleType}
+                                    options={vehicleTypeOptions}
+                                />
                             </div>
                         </div>
                     </div>
@@ -322,15 +350,12 @@ export default function CustomerClient({ initialCustomers }: { initialCustomers:
                             </div>
                             <div className="col-span-2">
                                 <label className="block text-sm text-slate-400 mb-1">Vehicle Type</label>
-                                <select name="vehicleType" className="w-full bg-slate-900 border-slate-700 rounded p-2 text-white">
-                                    <option>Car - Sedan</option>
-                                    <option>Car - SUV</option>
-                                    <option>Car - Hatchback</option>
-                                    <option>Bike - Sport</option>
-                                    <option>Bike - Commuter</option>
-                                    <option>Scooter</option>
-                                    <option>Other</option>
-                                </select>
+                                <CustomSelect
+                                    name="vehicleType"
+                                    value={addVehicleModalType}
+                                    onChange={setAddVehicleModalType}
+                                    options={vehicleTypeOptions}
+                                />
                             </div>
                         </div>
                         <button type="submit" className="w-full btn btn-primary mt-4">Add Vehicle</button>
