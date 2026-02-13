@@ -3,6 +3,7 @@ import { Product } from '@/types';
 import Link from 'next/link';
 import DownloadReportButton from '@/components/dashboard/DownloadReportButton';
 import DashboardStats from '@/components/dashboard/DashboardStats';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,22 @@ function getServiceStatus(lastServiceDateStr: string) {
 export default async function Dashboard() {
     const db = await getDb();
 
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+    let userName = 'User';
+    let userRole = 'employee';
+
+    if (sessionCookie) {
+        try {
+            const user = JSON.parse(sessionCookie.value);
+            userName = user.name || user.username || 'User';
+            userRole = user.role || 'employee';
+        } catch (e) {
+            console.error("Failed to parse session", e);
+        }
+    }
+
+    // ... (rest of the calculation logic remains) -> Restoring logic below
     let totalRevenue = 0;
     let totalServices = 0;
     const customersDue: { name: string; vehicle: string; phone: string; status: any }[] = [];
@@ -69,7 +86,7 @@ export default async function Dashboard() {
     });
 
     db.products.forEach(product => {
-        stockValue += (product.price * product.quantity);
+        stockValue += (product.sellingPrice * product.quantity);
         if (product.quantity <= product.minStockAlert) lowStock.push(product);
         if (productUsage[product.id]) {
             const usage = productUsage[product.id];
@@ -91,16 +108,18 @@ export default async function Dashboard() {
                     <h2 className="text-2xl font-bold text-white tracking-tight">
                         Dashboard Overview
                     </h2>
-                    <p className="text-[13px] mt-0.5" style={{ color: '#86868B' }}>Welcome back, Admin — here&apos;s your shop at a glance</p>
+                    <p className="text-[13px] mt-0.5" style={{ color: '#86868B' }}>Welcome back, {userName} — here&apos;s your shop at a glance</p>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
-                    <DownloadReportButton
-                        data={{
-                            totalRevenue, totalServices, stockValue, lowStock,
-                            stockPredictions: stockPredictions.map(sp => ({ product: sp.product.name, daysLeft: sp.daysLeft, dailyRate: sp.dailyRate })),
-                            customersDue: customersDue.map(c => ({ name: c.name, vehicle: c.vehicle, phone: c.phone, status: { status: c.status.status, days: c.status.days, label: c.status.label } }))
-                        }}
-                    />
+                    {userRole === 'admin' && (
+                        <DownloadReportButton
+                            data={{
+                                totalRevenue, totalServices, stockValue, lowStock,
+                                stockPredictions: stockPredictions.map(sp => ({ product: sp.product.name, daysLeft: sp.daysLeft, dailyRate: sp.dailyRate })),
+                                customersDue: customersDue.map(c => ({ name: c.name, vehicle: c.vehicle, phone: c.phone, status: { status: c.status.status, days: c.status.days, label: c.status.label } }))
+                            }}
+                        />
+                    )}
                     <Link href="/services/new" className="btn btn-primary !px-3.5 !py-2 text-xs flex-1 md:flex-none">
                         + New Service
                     </Link>
@@ -108,7 +127,7 @@ export default async function Dashboard() {
             </div>
 
             {/* Interactive Stats */}
-            <DashboardStats customers={db.customers} products={db.products} />
+            <DashboardStats customers={db.customers} products={db.products} role={userRole} />
 
             {/* Bottom Panels */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

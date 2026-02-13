@@ -19,7 +19,8 @@ export async function addProduct(formData: FormData) {
     const name = formData.get('name') as string;
     const category = formData.get('category') as 'Tool' | 'Spare Part';
     const supplier = formData.get('supplier') as string;
-    const price = parseFloat(formData.get('price') as string);
+    const purchasePrice = parseFloat(formData.get('purchasePrice') as string);
+    const sellingPrice = parseFloat(formData.get('sellingPrice') as string);
     const gstRate = parseFloat(formData.get('gstRate') as string);
     const quantity = parseInt(formData.get('quantity') as string);
     const minStockAlert = parseInt(formData.get('minStockAlert') as string);
@@ -29,7 +30,8 @@ export async function addProduct(formData: FormData) {
         name,
         category,
         supplier,
-        price,
+        purchasePrice,
+        sellingPrice,
         gstRate,
         quantity,
         minStockAlert
@@ -129,7 +131,7 @@ export async function saveService(customerId: string, vehicleId: string, service
             { $inc: { quantity: -partItem.quantity } }
         );
 
-        const cost = product.price * partItem.quantity;
+        const cost = product.sellingPrice * partItem.quantity;
         const gst = cost * (product.gstRate / 100);
 
         totalPartsCost += cost;
@@ -138,7 +140,7 @@ export async function saveService(customerId: string, vehicleId: string, service
         partsUsedDetails.push({
             productId: product.id,
             quantity: partItem.quantity,
-            costAtService: product.price,
+            costAtService: product.sellingPrice,
             name: product.name
         });
     }
@@ -209,7 +211,8 @@ export async function updateProduct(productId: string, updates: Partial<{
     name: string;
     category: string;
     supplier: string;
-    price: number;
+    sellingPrice: number;
+    purchasePrice?: number;
     gstRate: number;
     quantity: number;
     minStockAlert: number;

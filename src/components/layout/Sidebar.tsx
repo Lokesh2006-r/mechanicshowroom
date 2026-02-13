@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { User } from '@/types';
 
 const menuItems = [
     { name: 'Dashboard', path: '/', icon: '📊' },
@@ -12,7 +13,7 @@ const menuItems = [
     { name: 'Admin Panel', path: '/admin', icon: '⚙️' },
 ];
 
-export default function Sidebar({ onCloseMobile }: { onCloseMobile: () => void }) {
+export default function Sidebar({ onCloseMobile, user }: { onCloseMobile: () => void; user?: User | null }) {
     const pathname = usePathname();
 
     return (
@@ -58,7 +59,12 @@ export default function Sidebar({ onCloseMobile }: { onCloseMobile: () => void }
             {/* Navigation - dock style */}
             <nav className="flex flex-col gap-1 flex-grow overflow-y-auto py-4 px-3">
                 <p className="text-[10px] font-semibold text-[#5A5A6E] uppercase tracking-widest px-3 mb-2">Navigation</p>
-                {menuItems.map((item) => {
+                {menuItems.filter(item => {
+                    if (user?.role !== 'admin') {
+                        return !['Analytics', 'Admin Panel', 'Reports'].includes(item.name);
+                    }
+                    return true;
+                }).map((item) => {
                     const isActive = pathname === item.path;
                     return (
                         <Link
@@ -102,8 +108,8 @@ export default function Sidebar({ onCloseMobile }: { onCloseMobile: () => void }
                             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#28C840] border-2 border-[#121224]"></span>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-white truncate">Current User</p>
-                            <p className="text-[10px] text-[#5A5A6E] truncate">Online</p>
+                            <p className="text-xs font-semibold text-white truncate">{user?.name || 'Guest User'}</p>
+                            <p className="text-[10px] text-[#5A5A6E] truncate">{user?.username ? `@${user.username}` : 'Offline'}</p>
                         </div>
                     </div>
                     <button

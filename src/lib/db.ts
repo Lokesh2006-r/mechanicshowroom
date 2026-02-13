@@ -4,9 +4,9 @@ import { Product, Customer } from '@/types';
 
 // Seed data — only used if the database is empty
 const seedProducts: Product[] = [
-    { id: '1', name: 'Wrench Set (Pro)', category: 'Tool', supplier: 'Snap-on', price: 1500, gstRate: 18, quantity: 5, minStockAlert: 2 },
-    { id: '2', name: 'Engine Oil 5W-40', category: 'Spare Part', supplier: 'Castrol', price: 850, gstRate: 18, quantity: 20, minStockAlert: 5 },
-    { id: '3', name: 'Brake Pads (Front)', category: 'Spare Part', supplier: 'Bosch', price: 1200, gstRate: 18, quantity: 8, minStockAlert: 3 },
+    { id: '1', name: 'Wrench Set (Pro)', category: 'Tool', supplier: 'Snap-on', purchasePrice: 1200, sellingPrice: 1500, gstRate: 18, quantity: 5, minStockAlert: 2 },
+    { id: '2', name: 'Engine Oil 5W-40', category: 'Spare Part', supplier: 'Castrol', purchasePrice: 600, sellingPrice: 850, gstRate: 18, quantity: 20, minStockAlert: 5 },
+    { id: '3', name: 'Brake Pads (Front)', category: 'Spare Part', supplier: 'Bosch', purchasePrice: 800, sellingPrice: 1200, gstRate: 18, quantity: 8, minStockAlert: 3 },
 ];
 
 const seedCustomers: Customer[] = [
@@ -66,7 +66,8 @@ export async function getDb(): Promise<{ products: Product[]; customers: Custome
         name: p.name,
         category: p.category,
         supplier: p.supplier,
-        price: p.price,
+        purchasePrice: p.purchasePrice || p.price || 0,
+        sellingPrice: p.sellingPrice || p.price || 0,
         gstRate: p.gstRate,
         quantity: p.quantity,
         minStockAlert: p.minStockAlert,

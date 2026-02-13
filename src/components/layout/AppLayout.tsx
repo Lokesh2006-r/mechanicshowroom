@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { usePathname } from 'next/navigation';
+import { User } from '@/types';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children, user }: { children: React.ReactNode; user?: User | null }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const pathname = usePathname();
 
@@ -59,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             `} style={{
                     borderRight: '1px solid rgba(255,255,255,0.04)',
                 }}>
-                <Sidebar onCloseMobile={() => setIsSidebarOpen(false)} />
+                <Sidebar onCloseMobile={() => setIsSidebarOpen(false)} user={user} />
             </div>
 
             {/* Overlay for mobile sidebar */}

@@ -13,7 +13,8 @@ const ProductSchema = new Schema<Product>({
     category: { type: String, enum: ['Tool', 'Spare Part'], required: true },
     quantity: { type: Number, required: true, default: 0 },
     supplier: { type: String, required: true },
-    price: { type: Number, required: true },
+    purchasePrice: { type: Number, required: true },
+    sellingPrice: { type: Number, required: true },
     gstRate: { type: Number, required: true },
     minStockAlert: { type: Number, default: 10 }
 });

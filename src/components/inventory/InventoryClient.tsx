@@ -117,7 +117,7 @@ export default function InventoryClient({ initialProducts }: { initialProducts: 
                                     </td>
                                     <td className="p-4 text-slate-400">{product.supplier}</td>
                                     <td className="p-4 text-right font-mono text-slate-300">
-                                        ₹{product.price.toLocaleString()}
+                                        ₹{product.sellingPrice.toLocaleString()}
                                     </td>
                                     <td className="p-4 text-right font-bold text-white">
                                         {product.quantity}
@@ -166,10 +166,14 @@ export default function InventoryClient({ initialProducts }: { initialProducts: 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">Price (₹)</label>
-                            <input name="price" required type="number" step="0.01" className="w-full bg-slate-900 border-slate-700 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="0.00" />
+                            <label className="block text-sm font-medium text-slate-300 mb-1">Purchase Price</label>
+                            <input name="purchasePrice" required type="number" step="0.01" className="w-full bg-slate-900 border-slate-700 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="0.00" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-1">Selling Price</label>
+                            <input name="sellingPrice" required type="number" step="0.01" className="w-full bg-slate-900 border-slate-700 rounded-lg p-2.5 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="0.00" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">GST Rate (%)</label>

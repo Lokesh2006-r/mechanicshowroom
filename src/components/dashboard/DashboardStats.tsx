@@ -27,7 +27,7 @@ function WideModal({ isOpen, onClose, title, children }: { isOpen: boolean; onCl
                 WebkitBackdropFilter: 'blur(8px) saturate(1.2)',
             }} onClick={onClose}></div>
 
-            <div className={`relative w-full max-w-4xl transform transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
+            <div className={`relative w-[95%] md:w-full max-w-4xl transform transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                 style={{
                     background: 'rgba(30, 30, 56, 0.95)',
                     backdropFilter: 'blur(40px) saturate(1.8)',
@@ -36,20 +36,34 @@ function WideModal({ isOpen, onClose, title, children }: { isOpen: boolean; onCl
                     borderRadius: '14px',
                     boxShadow: '0 22px 70px 4px rgba(0,0,0,0.56), 0 0 0 1px rgba(255,255,255,0.03) inset',
                     overflow: 'hidden',
+                    maxHeight: '90vh',
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}
             >
                 {/* macOS Titlebar */}
-                <div className="flex items-center gap-2 px-4 py-3.5" style={{
+                <div className="flex items-center justify-between px-4 py-3.5 relative shrink-0" style={{
                     background: 'rgba(255, 255, 255, 0.03)',
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
                 }}>
-                    <button onClick={onClose} className="w-3 h-3 rounded-full hover:brightness-110 transition-all flex items-center justify-center group"
-                        style={{ background: '#FF5F57', boxShadow: '0 0 4px rgba(255,95,87,0.4)' }}>
-                        <span className="text-[8px] text-black/60 opacity-0 group-hover:opacity-100 font-bold leading-none">✕</span>
+                    <div className="flex items-center gap-2">
+                        <button onClick={onClose} className="w-3 h-3 rounded-full hover:brightness-110 transition-all flex items-center justify-center group"
+                            style={{ background: '#FF5F57', boxShadow: '0 0 4px rgba(255,95,87,0.4)' }}>
+                            <span className="text-[8px] text-black/60 opacity-0 group-hover:opacity-100 font-bold leading-none">✕</span>
+                        </button>
+                        <span className="w-3 h-3 rounded-full" style={{ background: '#FFBD2E', boxShadow: '0 0 4px rgba(255,189,46,0.4)' }}></span>
+                        <span className="w-3 h-3 rounded-full" style={{ background: '#28C840', boxShadow: '0 0 4px rgba(40,200,64,0.4)' }}></span>
+                    </div>
+
+                    <h3 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[13px] font-medium text-[#86868B] truncate max-w-[50%]">{title}</h3>
+
+                    {/* Right Close Button */}
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                    >
+                        ✕
                     </button>
-                    <span className="w-3 h-3 rounded-full" style={{ background: '#FFBD2E', boxShadow: '0 0 4px rgba(255,189,46,0.4)' }}></span>
-                    <span className="w-3 h-3 rounded-full" style={{ background: '#28C840', boxShadow: '0 0 4px rgba(40,200,64,0.4)' }}></span>
-                    <h3 className="flex-1 text-center text-[13px] font-medium text-[#86868B] pr-12 truncate">{title}</h3>
                 </div>
                 <div className="p-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
                     {children}
@@ -80,7 +94,7 @@ interface StockItem {
     name: string;
     category: string;
     supplier: string;
-    price: number;
+    sellingPrice: number;
     quantity: number;
     stockValue: number;
     gstRate: number;
@@ -102,6 +116,7 @@ interface DueService {
 interface DashboardStatsProps {
     customers: Customer[];
     products: Product[];
+    role?: string;
 }
 
 // --------------- Helper ---------------
@@ -156,8 +171,10 @@ const cardConfigs = [
 ];
 
 // --------------- Main Component ---------------
-export default function DashboardStats({ customers, products }: DashboardStatsProps) {
+
+export default function DashboardStats({ customers, products, role = 'employee' }: DashboardStatsProps) {
     const [activeModal, setActiveModal] = useState<'revenue' | 'services' | 'stock' | 'due' | null>(null);
+    const isAdmin = role === 'admin';
 
     // ---- Compute all data ----
     const allServices: ServiceDetail[] = [];
@@ -211,17 +228,43 @@ export default function DashboardStats({ customers, products }: DashboardStatsPr
 
     const stockItems: StockItem[] = products.map(p => ({
         id: p.id, name: p.name, category: p.category, supplier: p.supplier,
-        price: p.price, quantity: p.quantity, stockValue: p.price * p.quantity,
+        sellingPrice: p.sellingPrice, quantity: p.quantity, stockValue: p.sellingPrice * p.quantity,
         gstRate: p.gstRate, minStockAlert: p.minStockAlert, isLow: p.quantity <= p.minStockAlert,
     }));
     const totalStockValue = stockItems.reduce((s, i) => s + i.stockValue, 0);
     const lowStockCount = stockItems.filter(i => i.isLow).length;
 
     const cardData = [
-        { title: 'Total Revenue', value: formatCurrency(totalRevenue), sub: 'Total earnings', icon: '💰', modal: 'revenue' as const },
-        { title: 'Services Completed', value: allServices.length.toString(), sub: 'Lifetime services', icon: '🔧', modal: 'services' as const },
-        { title: 'Stock Value', value: formatCurrency(totalStockValue), sub: lowStockCount > 0 ? `${lowStockCount} low stock items` : 'All stock OK', icon: '📦', modal: 'stock' as const, warn: lowStockCount > 0 },
-        { title: 'Due Services', value: dueServices.length.toString(), sub: 'Action required', icon: '⏰', modal: 'due' as const, warn: dueServices.length > 0 },
+        {
+            title: 'Total Revenue',
+            value: isAdmin ? formatCurrency(totalRevenue) : '••••••',
+            sub: isAdmin ? 'Total earnings' : 'Hidden',
+            icon: '💰',
+            modal: isAdmin ? 'revenue' as const : null
+        },
+        {
+            title: 'Services Completed',
+            value: allServices.length.toString(),
+            sub: 'Lifetime services',
+            icon: '🔧',
+            modal: 'services' as const
+        },
+        {
+            title: 'Stock Value',
+            value: isAdmin ? formatCurrency(totalStockValue) : '••••••',
+            sub: isAdmin ? (lowStockCount > 0 ? `${lowStockCount} low stock items` : 'All stock OK') : 'Hidden',
+            icon: '📦',
+            modal: isAdmin ? 'stock' as const : null,
+            warn: isAdmin && lowStockCount > 0
+        },
+        {
+            title: 'Due Services',
+            value: dueServices.length.toString(),
+            sub: 'Action required',
+            icon: '⏰',
+            modal: 'due' as const,
+            warn: dueServices.length > 0
+        },
     ];
 
     return (
@@ -232,7 +275,7 @@ export default function DashboardStats({ customers, products }: DashboardStatsPr
                     const cfg = cardConfigs[i];
                     return (
                         <button
-                            key={card.modal}
+                            key={cfg.key}
                             onClick={() => setActiveModal(card.modal)}
                             className="text-left mac-shine relative group cursor-pointer transition-all duration-300 hover:-translate-y-1"
                             style={{
@@ -421,7 +464,7 @@ export default function DashboardStats({ customers, products }: DashboardStatsPr
                         <table className="w-full text-left text-sm">
                             <thead>
                                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                    {['Product', 'Category', 'Supplier', 'Price ₹', 'Qty', 'Stock Value ₹', 'Status'].map(h => (
+                                    {['Product', 'Category', 'Supplier', 'Selling Price ₹', 'Qty', 'Stock Value ₹', 'Status'].map(h => (
                                         <th key={h} className="pb-3 pr-3 text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#5A5A6E' }}>{h}</th>
                                     ))}
                                 </tr>
@@ -443,7 +486,7 @@ export default function DashboardStats({ customers, products }: DashboardStatsPr
                                             }}>{item.category}</span>
                                         </td>
                                         <td className="py-2.5 pr-3 text-[13px]" style={{ color: '#86868B' }}>{item.supplier}</td>
-                                        <td className="py-2.5 pr-3 text-right font-mono text-[13px]" style={{ color: '#86868B' }}>{formatCurrency(item.price)}</td>
+                                        <td className="py-2.5 pr-3 text-right font-mono text-[13px]" style={{ color: '#86868B' }}>{formatCurrency(item.sellingPrice)}</td>
                                         <td className="py-2.5 pr-3 text-right font-bold" style={{ color: item.isLow ? '#FF453A' : '#F5F5F7' }}>{item.quantity}</td>
                                         <td className="py-2.5 pr-3 text-right font-mono font-bold text-[13px]" style={{ color: '#30D158' }}>{formatCurrency(item.stockValue)}</td>
                                         <td className="py-2.5 text-center">

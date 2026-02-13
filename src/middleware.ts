@@ -30,10 +30,11 @@ export function middleware(request: NextRequest) {
     try {
         const user = JSON.parse(session.value);
 
-        // Protect /admin routes - Only 'admin' role allowed
-        if (pathname.startsWith('/admin')) {
+        // Protect specific routes (Admin, Analytics, Reports) - Only 'admin' role allowed
+        const restrictedPaths = ['/admin', '/analytics', '/reports'];
+        if (restrictedPaths.some(path => pathname.startsWith(path))) {
             if (user.role !== 'admin') {
-                console.warn(`Unauthorized access attempt to /admin by ${user.username} (${user.role})`);
+                console.warn(`Unauthorized access attempt to ${pathname} by ${user.username} (${user.role})`);
                 // Redirect employees to main dashboard
                 return NextResponse.redirect(new URL('/', request.url));
             }

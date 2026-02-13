@@ -1,8 +1,26 @@
 import { getDb } from '@/lib/db';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AnalyticsPage() {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+
+    if (!sessionCookie) {
+        redirect('/login');
+    }
+
+    try {
+        const user = JSON.parse(sessionCookie.value);
+        if (user.role !== 'admin') {
+            redirect('/');
+        }
+    } catch (e) {
+        redirect('/login');
+    }
+
     const db = await getDb();
 
     // Calculate analytics

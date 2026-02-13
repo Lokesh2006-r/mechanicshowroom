@@ -1,4 +1,6 @@
 import { getDb } from '@/lib/db';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import AdminClient from '@/components/admin/AdminClient';
 import LogoutButton from '@/components/admin/LogoutButton';
 import { MECHANICS_DATA } from '@/lib/constants';
@@ -6,6 +8,22 @@ import { MECHANICS_DATA } from '@/lib/constants';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+
+    if (sessionCookie) {
+        try {
+            const user = JSON.parse(sessionCookie.value);
+            if (user.role !== 'admin') {
+                redirect('/');
+            }
+        } catch (e) {
+            redirect('/login');
+        }
+    } else {
+        redirect('/login');
+    }
+
     const db = await getDb();
 
     return (

@@ -22,6 +22,8 @@ export default function AdminClient({ products, customers }: { products: Product
 
     // Employee detail modal
     const [viewingEmployee, setViewingEmployee] = useState<Mechanic | null>(null);
+    const [addingEmployee, setAddingEmployee] = useState(false);
+    const [newEmployee, setNewEmployee] = useState<Partial<Mechanic>>({ status: 'Active' });
 
     // Delete confirmation
     const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'product' | 'customer'; id: string; name: string } | null>(null);
@@ -95,7 +97,8 @@ export default function AdminClient({ products, customers }: { products: Product
                 name: editForm.name,
                 category: editForm.category as any,
                 supplier: editForm.supplier,
-                price: Number(editForm.price),
+                sellingPrice: Number(editForm.sellingPrice),
+                purchasePrice: Number(editForm.purchasePrice),
                 gstRate: Number(editForm.gstRate),
                 quantity: Number(editForm.quantity),
                 minStockAlert: Number(editForm.minStockAlert),
@@ -189,7 +192,7 @@ export default function AdminClient({ products, customers }: { products: Product
         <div>
             {/* Tab Switcher + Search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap items-center">
                     <button
                         onClick={() => { setActiveTab('products'); setSearchTerm(''); }}
                         className={`px-5 py-2.5 rounded-lg font-medium transition-all text-sm ${activeTab === 'products'
@@ -215,8 +218,16 @@ export default function AdminClient({ products, customers }: { products: Product
                             : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                             }`}
                     >
-                        🛠️ Employees ({MECHANICS_DATA.length})
+                        🛠️ Employees
                     </button>
+                    {activeTab === 'employees' && (
+                        <button
+                            onClick={() => setAddingEmployee(true)}
+                            className="px-4 py-2.5 rounded-lg font-medium text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ml-2 animate-fade-in"
+                        >
+                            + Add Employee
+                        </button>
+                    )}
                 </div>
                 <input
                     type="text"
@@ -261,7 +272,7 @@ export default function AdminClient({ products, customers }: { products: Product
                                             </span>
                                         </td>
                                         <td className="p-4 text-slate-300 text-sm">{p.supplier}</td>
-                                        <td className="p-4 text-right font-mono text-emerald-400 font-bold">₹{p.price.toLocaleString()}</td>
+                                        <td className="p-4 text-right font-mono text-emerald-400 font-bold">₹{p.sellingPrice.toLocaleString()}</td>
                                         <td className="p-4 text-right text-slate-300">{p.gstRate}%</td>
                                         <td className="p-4 text-right">
                                             <span className={`font-bold ${p.quantity <= p.minStockAlert ? 'text-red-400' : 'text-white'}`}>
@@ -483,11 +494,11 @@ export default function AdminClient({ products, customers }: { products: Product
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-1">Price (₹)</label>
+                                <label className="block text-sm text-slate-400 mb-1">Selling Price (₹)</label>
                                 <input
                                     type="number"
-                                    value={editForm.price || 0}
-                                    onChange={e => setEditForm({ ...editForm, price: parseFloat(e.target.value) })}
+                                    value={editForm.sellingPrice || 0}
+                                    onChange={e => setEditForm({ ...editForm, sellingPrice: parseFloat(e.target.value) })}
                                     className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white font-mono text-right"
                                 />
                             </div>
@@ -586,6 +597,85 @@ export default function AdminClient({ products, customers }: { products: Product
                         </button>
                     </div>
                 )}
+            </Modal>
+
+            {/* ======= ADD EMPLOYEE MODAL ======= */}
+            <Modal isOpen={addingEmployee} onClose={() => setAddingEmployee(false)} title="Add New Employee">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm text-slate-400 mb-1">Full Name</label>
+                        <input
+                            value={newEmployee.name || ''}
+                            onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="e.g. Rahul Sharma"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-slate-400 mb-1">Phone Number</label>
+                        <input
+                            value={newEmployee.phone || ''}
+                            onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })}
+                            className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
+                            placeholder="e.g. 9876543210"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Role</label>
+                            <CustomSelect
+                                value={newEmployee.role || 'Junior Mechanic'}
+                                onChange={(val) => setNewEmployee({ ...newEmployee, role: val as any })}
+                                options={[
+                                    { value: 'Senior Mechanic', label: 'Senior Mechanic' },
+                                    { value: 'Junior Mechanic', label: 'Junior Mechanic' },
+                                    { value: 'Specialist', label: 'Specialist' },
+                                    { value: 'Trainee', label: 'Trainee' }
+                                ]}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Specialization</label>
+                            <input
+                                value={newEmployee.specialization || ''}
+                                onChange={e => setNewEmployee({ ...newEmployee, specialization: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
+                                placeholder="e.g. Engine"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Daily Wage (₹)</label>
+                            <input
+                                type="number"
+                                value={newEmployee.dailyWage || ''}
+                                onChange={e => setNewEmployee({ ...newEmployee, dailyWage: parseFloat(e.target.value) })}
+                                className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white font-mono text-right"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">Join Date</label>
+                            <input
+                                type="date"
+                                value={newEmployee.joinDate || ''}
+                                onChange={e => setNewEmployee({ ...newEmployee, joinDate: e.target.value })}
+                                className="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            alert("Employee addition logic to be implemented with DB connection.");
+                            setAddingEmployee(false);
+                            // TODO: Implement actual save action
+                        }}
+                        className="w-full btn btn-primary mt-4 py-3"
+                    >
+                        ➕ Add Employee
+                    </button>
+                </div>
             </Modal>
 
             {/* ======= VIEW EMPLOYEE DETAIL MODAL ======= */}

@@ -32,13 +32,13 @@ function generateInvoiceHTML({
     const partsRows = parts.map(p => {
         const product = products.find(pr => pr.id === p.productId);
         if (!product) return '';
-        const lineTotal = product.price * p.quantity;
+        const lineTotal = product.sellingPrice * p.quantity;
         const gst = lineTotal * (product.gstRate / 100);
         return `
             <tr>
                 <td style="padding:10px 14px;border-bottom:1px solid #e8e8ed;color:#1d1d1f;font-size:13px;">${product.name}</td>
                 <td style="padding:10px 14px;border-bottom:1px solid #e8e8ed;text-align:center;color:#86868b;font-size:13px;">${p.quantity}</td>
-                <td style="padding:10px 14px;border-bottom:1px solid #e8e8ed;text-align:right;color:#1d1d1f;font-size:13px;">₹${product.price.toFixed(2)}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid #e8e8ed;text-align:right;color:#1d1d1f;font-size:13px;">₹${product.sellingPrice.toFixed(2)}</td>
                 <td style="padding:10px 14px;border-bottom:1px solid #e8e8ed;text-align:right;color:#86868b;font-size:13px;">${product.gstRate}%</td>
                 <td style="padding:10px 14px;border-bottom:1px solid #e8e8ed;text-align:right;color:#1d1d1f;font-weight:600;font-size:13px;">₹${(lineTotal + gst).toFixed(2)}</td>
             </tr>
@@ -232,7 +232,7 @@ export default function BillingClient({ products, customers }: { products: Produ
     const partsTotal = useMemo(() => {
         return parts.reduce((sum, item) => {
             const product = products.find(p => p.id === item.productId);
-            return sum + (product ? product.price * item.quantity : 0);
+            return sum + (product ? product.sellingPrice * item.quantity : 0);
         }, 0);
     }, [parts, products]);
 
@@ -241,7 +241,7 @@ export default function BillingClient({ products, customers }: { products: Produ
         parts.forEach(item => {
             const product = products.find(p => p.id === item.productId);
             if (product) {
-                pGst += (product.price * item.quantity) * (product.gstRate / 100);
+                pGst += (product.sellingPrice * item.quantity) * (product.gstRate / 100);
             }
         });
         const sGst = serviceCharge * 0.18;
@@ -291,7 +291,7 @@ export default function BillingClient({ products, customers }: { products: Produ
 
     const productOptions = useMemo(() => products.map(p => ({
         value: p.id,
-        label: `${p.name} (Stock: ${p.quantity}) - ₹${p.price}`
+        label: `${p.name} (Stock: ${p.quantity}) - ₹${p.sellingPrice}`
     })), [products]);
 
     // ---- Invoice Data helper ----

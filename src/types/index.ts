@@ -3,7 +3,8 @@ export interface Product {
     name: string;
     category: 'Tool' | 'Spare Part';
     supplier: string;
-    price: number;
+    purchasePrice: number;
+    sellingPrice: number;
     gstRate: number;
     quantity: number;
     minStockAlert: number;
